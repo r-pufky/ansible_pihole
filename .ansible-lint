@@ -1,0 +1,3 @@
+skip_list:
+  - unnamed-task   # unnamed tasks are used as includes.
+  - package-latest # allow 'latest' packages.

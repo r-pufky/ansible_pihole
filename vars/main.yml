@@ -1,0 +1,26 @@
+---
+###############################################################################
+# Default Pi-Hole Package Dependencies
+###############################################################################
+# Default required packages for Pi-Hole install.
+
+pihole_default_packages:
+  - 'git'
+  - 'iproute2'
+  - 'whiptail'
+  - 'ca-certificates'
+  - 'sqlite3'
+
+###############################################################################
+# Default Pi-Hole gravity.db queries
+###############################################################################
+# queries used to modify gravity.db for setup.
+
+pihole_default_sqlite3: '/usr/bin/sqlite3 /etc/pihole/gravity.db'
+pihole_default_ad_insert: 'insert or ignore into \"adlist\" (id, address, enabled, comment) values'
+pihole_default_domain_insert: 'insert or ignore into \"domainlist\" (id, type, domain, enabled, comment) values'
+pihole_default_client_insert: 'insert or ignore into \"client\" (id, ip, comment) values'
+pihole_default_groups_insert: 'insert or ignore into \"group\" (id, enabled, name, description) values'
+pihole_default_ad_groups_insert: 'insert or ignore into \"adlist_by_group\" (adlist_id, group_id) values'
+pihole_default_client_groups_insert: 'insert or ignore into \"client_by_group\" (client_id, group_id) values'
+pihole_default_domain_groups_insert: 'insert or ignore into \"domainlist_by_group\" (domainlist_id, group_id) values'

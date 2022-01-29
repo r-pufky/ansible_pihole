@@ -1,0 +1,74 @@
+---
+###############################################################################
+# Pi-Hole Install
+###############################################################################
+# DNS blackhole.
+#
+# Use teleport to migrate non-gravity settings: pihole -a -t
+#
+# Teleport regenerates DB data but does not preserve long-term data. Only copy
+# DB's if you want this data. Teleporter includes pihole FTL settings data.
+#
+# Reference:
+# * https://docs.pi-hole.net/core/pihole-command/#teleport
+# * https://r-pufky.github.io/docs/services/pihole/setup.html#service-pihole-setup
+# * https://gist.github.com/bendews/e09edfc60e581ec4c686c4b70297f543
+
+- name: 'install | install dependencies'
+  ansible.builtin.apt:
+    name:  '{{ pihole_default_packages }}'
+    state: 'latest'
+    update_cache: true
+
+# Pi-Hole will set correct permissions on install and startup.
+- name: 'install | create /etc/pihole'
+  ansible.builtin.file:
+    path:  '/etc/pihole'
+    mode:  0770
+    state: 'directory'
+
+- name: 'install | set deployment config'
+  ansible.builtin.template:
+    src:   'setupVars.conf.j2'
+    dest:  '/etc/pihole/setupVars.conf'
+    owner: 'root'
+    group: 'root'
+    mode:  0644
+  notify: 'restart pihole dns'
+
+- name: 'install | set binary location'
+  ansible.builtin.stat:
+    path: '/usr/local/bin/pihole'
+  register: _pihole_binary
+
+- name: 'install | determine if pihole is installed'
+  ansible.builtin.set_fact:
+    pihole_installed: '{{ _pihole_binary.stat.exists|default(false) }}'
+
+- name: 'install | fetching latest installer'
+  ansible.builtin.get_url:
+    url:  'https://install.pi-hole.net'
+    dest: '/tmp/pihole-install.sh'
+    mode: 'u+rwx'
+  when: not pihole_installed
+
+- name: 'install | install'
+  ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
+  when: not pihole_installed
+
+# Generate random password if no password is set.
+#
+# Another manual method:
+#   echo -n P@ssw0rd | sha256sum | awk '{printf "%s",$1 }' | sha256sum
+#
+# Reference:
+# * https://medium.com/@AbhijeetKasurde/ansible-generating-random-string-using-password-lookup-plugin-7cd3431a0d0
+# * https://discourse.pi-hole.net/t/what-is-setupvars-conf-and-how-do-i-use-it/3533/5
+- name: 'install | set random password (no install password set)'
+  ansible.builtin.command: "pihole -a -p {{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
+  when: pihole_webpassword|length == 0
+
+- name: 'install | set password'
+  ansible.builtin.command: 'pihole -a -p {{ pihole_webpassword }}'
+  when: pihole_webpassword|length > 0
+  no_log: true # password

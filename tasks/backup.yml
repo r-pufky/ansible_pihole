@@ -1,0 +1,39 @@
+---
+###############################################################################
+# Pi-Hole Backup
+###############################################################################
+# Use teleporter to create a configuration backup.
+#
+# Reference:
+# * https://docs.pi-hole.net/core/pihole-command/#teleport
+
+# Teleporter dump created with execution timestamp. backup & standardize.
+- name: 'backup | create backup' # noqa no-changed-when always execute
+  ansible.builtin.shell: |
+    cd /root &&
+    pihole -a -t &&
+    find /root -type f -name 'pi-hole-*.tar.gz' -exec mv {} /root/pihole.tar.gz \;
+  args:
+    warn: false
+
+- name: 'backup | retrieve backup'
+  ansible.builtin.fetch:
+    src:  '/root/pihole.tar.gz'
+    dest: '{{ pihole_local_backup }}'
+    flat: true
+
+- name: 'backup | ENCRYPTION NOTICE'
+  ansible.builtin.debug:
+    msg: |
+
+      BE SURE TO ENCRYPT BEFORE COMMITING CHANGES.
+
+      ansible-vault encrypt '{{ pihole_local_backup }}'
+
+- name: 'backup | cleanup'
+  ansible.builtin.file:
+    path:  '{{ item }}'
+    state: 'absent'
+  loop:
+    - '/root/pihole.tar.gz'
+    - '/root/pi-hole-*.tar.gz'

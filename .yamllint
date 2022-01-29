@@ -1,0 +1,6 @@
+rules:
+  commas:
+    max-spaces-after: -1 # enable vertical alignment of config.
+  colons:
+    max-spaces-after: -1 # enable vertical alignment of config.
+  line-length: disable   # references, vertical alignment.

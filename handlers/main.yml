@@ -1,0 +1,9 @@
+---
+###############################################################################
+# Pi-Hole Handlers
+###############################################################################
+
+# pihole restartdns restarts all required pihole services.
+# Reference: https://discourse.pi-hole.net/t/the-pihole-command-with-examples/738
+- name: 'restart pihole dns'
+  ansible.builtin.command: 'pihole restartdns'
