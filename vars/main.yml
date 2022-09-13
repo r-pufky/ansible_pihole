@@ -16,6 +16,7 @@ pihole_default_packages:
 ###############################################################################
 # queries used to modify gravity.db for setup.
 
+pihole_default_binary: '/usr/local/bin/pihole'
 pihole_default_sqlite3: '/usr/bin/sqlite3 /etc/pihole/gravity.db'
 pihole_default_ad_insert: 'insert or ignore into \"adlist\" (id, address, enabled, comment) values'
 pihole_default_domain_insert: 'insert or ignore into \"domainlist\" (id, type, domain, enabled, comment) values'

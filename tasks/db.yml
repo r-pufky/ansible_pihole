@@ -6,6 +6,9 @@
 # run to ensure database ID's are consistent. Apply before UI changes are made
 # to ensure consistency.
 #
+# Currently, the pi-hole CLI does not manage the entire DB; if enabled, defer
+# possible DB changes to the CLI.
+#
 # Reference:
 # * https://docs.pi-hole.net/database/
 
@@ -15,11 +18,18 @@
   loop: '{{ pihole_ad_sources }}'
   when: pihole_ad_sources|length > 0
 
+- name: 'db | defer to cli for domain blocklist management'
+  ansible.builtin.include_tasks: cli.yml
+  loop: '{{ pihole_domain_blocklists }}'
+  loop_control:
+    loop_var: domain
+  when: pihole_use_cli and pihole_domain_blocklists|length > 0
+
 - name: 'db | add domain blocklist'
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_domain_insert }} ({{ item.id }}, {{ item.type }}, \"{{ item.domain }}\", {{ item.enabled|int }}, \"{{ item.comment }}\")"'
   become: true
   loop: '{{ pihole_domain_blocklists }}'
-  when: pihole_domain_blocklists|length > 0
+  when: not pihole_use_cli and pihole_domain_blocklists|length > 0
 
 - name: 'db | add clients'
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_client_insert }} ({{ item.id }}, \"{{ item.ip }}\", \"{{ item.comment }}\")"'

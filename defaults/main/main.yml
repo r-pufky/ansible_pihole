@@ -17,6 +17,10 @@
 # Target location of backup file on ansible host.
 pihole_local_backup: 'group_vars/pihole/data/pihole-teleporter.tar.gz'
 
+# Use pi-hole CLI for all possible DB modifications instead of direct edits.
+# Default: False.
+pihole_use_cli: false
+
 ###############################################################################
 # Pi-Hole setupVars.conf
 ###############################################################################
