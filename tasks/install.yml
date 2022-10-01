@@ -50,6 +50,7 @@
     url:  'https://install.pi-hole.net'
     dest: '/tmp/pihole-install.sh'
     mode: 'u+rwx'
+  ignore_errors: '{{ ansible_check_mode }}'
   when: not pihole_installed
 
 - name: 'install | install'
