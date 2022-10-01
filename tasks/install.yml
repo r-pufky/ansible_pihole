@@ -24,7 +24,7 @@
 - name: 'install | create /etc/pihole'
   ansible.builtin.file:
     path:  '/etc/pihole'
-    mode:  0775
+    mode:  0755
     state: 'directory'
 
 - name: 'install | set deployment config'
