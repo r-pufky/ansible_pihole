@@ -67,9 +67,9 @@
 # * https://discourse.pi-hole.net/t/what-is-setupvars-conf-and-how-do-i-use-it/3533/5
 - name: 'install | set random password (no install password set)'
   ansible.builtin.command: "pihole -a -p {{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
-  when: pihole_webpassword|length == 0
+  when: pihole_webpassword|string|length == 0
 
 - name: 'install | set password'
   ansible.builtin.command: 'pihole -a -p {{ pihole_webpassword }}'
-  when: pihole_webpassword|length > 0
+  when: pihole_webpassword|string|length > 0
   no_log: true # password
