@@ -38,17 +38,17 @@ pihole_dns_bogus_priv:        'false'
 pihole_dnssec:                'false'
 pihole_rev_server:            'false'
 pihole_pihole_interface:      '{{ ansible_default_ipv4.interface }}'
-pihole_ipv4_address:          "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ipaddr('address/prefix') }}"
+pihole_ipv4_address:          "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.ipaddr('address/prefix') }}"
 pihole_ipv6_address:          ''
 pihole_dhcp_active:           'false'
-pihole_dhcp_start:            "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | nthhost(200) }}"
-pihole_dhcp_end:              "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | nthhost(-5) }}"
+pihole_dhcp_start:            "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.nthhost(200) }}"
+pihole_dhcp_end:              "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.nthhost(-5) }}"
 pihole_dhcp_router:           '{{ ansible_default_ipv4.gateway }}'
 pihole_dhcp_leasetime:        '24'
 pihole_pihole_domain:         'lan'
 pihole_dhcp_ipv6:             'false'
 pihole_dhcp_rapid_commit:     'false'
-pihole_pihole_dns_1:          "{{ ansible_dns.nameservers | ipv4() | first | default('1.1.1.1') }}#53"
+pihole_pihole_dns_1:          "{{ ansible_dns.nameservers | ansible.utils.ipv4() | first | default('1.1.1.1') }}#53"
 pihole_pihole_dns_2:          ''
 pihole_query_logging:         'true'
 pihole_install_web_server:    'true'
