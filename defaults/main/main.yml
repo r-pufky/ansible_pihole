@@ -21,6 +21,10 @@ pihole_local_backup: 'group_vars/pihole/data/pihole-teleporter.tar.gz'
 # Default: False.
 pihole_use_cli: false
 
+# Apply any pihole updates during configuration? Otherwise updates must be done
+# via the GUI or CLI. Default: False.
+pihole_update_enable: false
+
 ###############################################################################
 # Pi-Hole setupVars.conf
 ###############################################################################
