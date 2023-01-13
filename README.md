@@ -26,7 +26,6 @@ settings in host_vars. Singleton instances can be applied in host_vars.
 group_vars/pihole/vars/pihole.yml
 ``` yaml
 pihole_webpassword: '{{ vault_pihole_webpassword }}'
-pihole_api_key:     '{{ vault_pihole_api_key }}'
 
 pihole_ad_sources:
   - id: 2
