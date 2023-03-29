@@ -4,12 +4,19 @@
 ###############################################################################
 # Default required packages for Pi-Hole install.
 
-pihole_default_packages:
+pihole_default_packages_apt:
   - 'git'
   - 'iproute2'
   - 'whiptail'
   - 'ca-certificates'
   - 'sqlite3'
+
+pihole_default_packages_rpm:
+  - 'git'
+  - 'iproute'
+  - 'ca-certificates'
+  - 'sqlite'
+  - 'newt'
 
 ###############################################################################
 # Default Pi-Hole gravity.db queries

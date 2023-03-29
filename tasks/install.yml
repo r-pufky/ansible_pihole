@@ -16,9 +16,13 @@
 
 - name: 'install | install dependencies'
   ansible.builtin.apt:
-    name:  '{{ pihole_default_packages }}'
+    name:  '{{ pihole_default_packages_apt }}'
     state: 'latest'
     update_cache: true
+  when: ansible_distribution == 'Debian'
+
+- ansible.builtin.import_tasks: install_redhat.yml
+  when: ansible_distribution == 'RedHat'
 
 # Pi-Hole will set correct permissions on install and startup.
 - name: 'install | create /etc/pihole'

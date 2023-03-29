@@ -82,6 +82,8 @@ Create a bug and provide as much information as possible.
 
 Associate pull requests with a submitted bug.
 
+RedHat support is best-effort only, and should be assigned to @rkoosaar.
+
 ## License
 [AGPL-3.0 License](https://github.com/r-pufky/ansible_pihole/blob/main/LICENSE)
 

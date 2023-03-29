@@ -12,6 +12,7 @@ galaxy_info:
       versions:
         - 'buster'
         - 'bullseye'
+    - name: 'RedHat'
 
   galaxy_tags:
     - 'pihole'
