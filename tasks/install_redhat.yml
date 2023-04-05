@@ -11,6 +11,13 @@
 # Reference:
 # * https://github.com/r-pufky/ansible_pihole/issues/10
 
+- name: 'RedHat Support is Best Effort!'
+  ansible.builtin.debug:
+    msg: |
+      RedHat support is currently best effort.
+
+      https://github.com/r-pufky/ansible_pihole/issues/10
+
 - name: 'redhat | install dependencies'
   ansible.builtin.dnf:
     name:  '{{ pihole_default_packages_rpm }}'
