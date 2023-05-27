@@ -41,6 +41,9 @@ pihole_dns_fqdn_required:     'false'
 pihole_dns_bogus_priv:        'false'
 pihole_dnssec:                'false'
 pihole_rev_server:            'false'
+pihole_rev_server_cidr:       "{{ ansible_default_ipv4.address | ansible.utils.ipaddr('network/prefix') }}"
+pihole_rev_server_target:     '{{ ansible_default_ipv4.gateway }}'
+pihole_rev_server_domain:     'lan'
 pihole_pihole_interface:      '{{ ansible_default_ipv4.interface }}'
 pihole_ipv4_address:          "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.ipaddr('address/prefix') }}"
 pihole_ipv6_address:          ''
