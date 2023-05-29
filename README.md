@@ -4,6 +4,8 @@ Pi-Hole installation from public release.
 ## Requirements
 Pi-Hole hosts should be configured with static IP's per Pi-Hole documentation.
 
+RedHat based support is **experimental** and best-effort only.
+
 ## Role Variables
 Settings have been throughly documented for usage.
 
@@ -15,6 +17,9 @@ All ports and protocols have been defined for the role.
 Hosts should only define firewall rules for ports they need.
 
 [defaults/ports.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/ports.yml).
+
+Redhat based installs will create a ``pihole`` zone in ``firewalld`` and allow
+traffic through.
 
 ## Dependencies
 N/A
