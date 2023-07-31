@@ -11,6 +11,10 @@ Settings have been throughly documented for usage.
 
 [defaults/main.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/main.yml).
 
+[defaults/blocklist.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/blocklist.yml).
+
+[defaults/ftl.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/ftl.yml).
+
 ### Ports
 All ports and protocols have been defined for the role.
 
@@ -33,6 +37,10 @@ group_vars/pihole/vars/pihole.yml
 pihole_webpassword: '{{ vault_pihole_webpassword }}'
 
 pihole_ad_sources:
+  - id: 1
+    address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+    enabled: true
+    comment: 'Migrated from /etc/pihole/adlists.list'
   - id: 2
     address: 'https://adaway.org/hosts.txt'
     enabled: true
@@ -81,6 +89,30 @@ site.yml
   roles:
      - 'r_pufky.pihole'
 ```
+
+## Versions
+
+**3.x: FTL Configuration Support**
+* Add FTL-DNS configuration support.
+* Standardize setupvars to YAML datatypes (no existing change required).
+* Enable management of default adlist.
+
+Consumers who have set custom FTL settings should ensure they have set these in
+*_vars before applying this version. See:
+
+[defaults/ftl.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/ftl.yml).
+
+**2.x: RedHat Support**
+* Redhat support. This is best-effort support only.
+* Conditional forwarding configuration support.
+* Added ports.yml usage reference for data consumption.
+
+**1.x: Initial Release**
+* Add support for updating pihole installation.
+* Add DHCP configuration, CLI domain list management.
+* Allow running in check_mode.
+* Reconfigure pihole on configuration change (opposed to restart).
+* Support for pihole CLI domain whitelist/blacklist management.
 
 ## Issues
 Create a bug and provide as much information as possible.

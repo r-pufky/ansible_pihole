@@ -32,6 +32,24 @@
     mode:  0755
     state: 'directory'
 
+- name: 'install | WARNING ROLE BEHAVIOR CHANGED'
+  ansible.builtin.debug:
+    msg: |
+      This role has breaking changes from previous versions.
+
+      ABORT and verify configuration before proceeding:
+
+      https://github.com/r-pufky/ansible_pihole/tree/main/defaults/main
+
+      Disable this message by setting 'pihole_disable_warning' to true.
+  when: not pihole_disable_warning
+
+- name: 'config | pause until manually confirmed'
+  ansible.builtin.pause:
+    echo:    false
+    seconds: 30
+  when: not pihole_disable_warning
+
 - name: 'install | set deployment config'
   ansible.builtin.template:
     src:   'setupVars.conf.j2'
@@ -39,6 +57,15 @@
     owner: 'root'
     group: 'root'
     mode:  0644
+  notify: 'restart pihole dns'
+
+- name: 'install | set FTL config'
+  ansible.builtin.template:
+    src: 'pihole-FTL.conf.j2'
+    dest: '/etc/pihole/pihole-FTL.conf'
+    owner: 'pihole'
+    group: 'root'
+    mode: 0664 # installed permissions.
   notify: 'restart pihole dns'
 
 - name: 'install | set binary location'
