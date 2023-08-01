@@ -94,6 +94,7 @@ site.yml
 
 **3.x: FTL Configuration Support**
 * Add FTL-DNS configuration support.
+* Add idempotent operational toggle.
 * Standardize setupvars to YAML datatypes (no existing change required).
 * Enable management of default adlist.
 
