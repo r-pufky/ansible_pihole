@@ -28,6 +28,22 @@ pihole_update_enable: false
 # Disable role behavior change warnings. Default: True.
 pihole_disable_warning: true
 
+# Enable idempotent pihole operation. Default: False.
+# The default behavior before this option existed is the equivalent of 'false'.
+#
+# Idempotent operation will:
+# * Clears all pihole databases and rebuilds them to prevent 'skew'.
+# * Service **WILL** be interrupted while role is being applied (use multiple
+#   pihole instances or disable this).
+# * All adlists will be redownloaded.
+# * Existing logging/client information will be lost.
+#
+# Long running pihole instances with large volume of changes to clients/groups
+# may see 'skew' between what exists on the pihole server and what the role
+# defines. This corrects the issue at the expense of service downtime and
+# rebuilding.
+pihole_idempotent: false
+
 ###############################################################################
 # Pi-Hole setupVars.conf
 ###############################################################################

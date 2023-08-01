@@ -12,6 +12,9 @@
 # Reference:
 # * https://docs.pi-hole.net/database/
 
+- ansible.builtin.include_tasks: clear_databases.yml
+  when: pihole_idempotent
+
 - name: 'db | add adlist source'
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_ad_insert }} ({{ item.id }}, \"{{ item.address }}\", {{ item.enabled|int }}, \"{{ item.comment }}\")"'
   become: true
@@ -31,11 +34,11 @@
   loop: '{{ pihole_domain_blocklists }}'
   when: not pihole_use_cli and pihole_domain_blocklists|length > 0
 
-- name: 'db | add clients'
-  ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_client_insert }} ({{ item.id }}, \"{{ item.ip }}\", \"{{ item.comment }}\")"'
-  become: true
-  loop: '{{ pihole_clients }}'
+- ansible.builtin.include_tasks: add_clients.yml
   when: pihole_clients|length > 0
+  loop: '{{ pihole_clients }}'
+  loop_control:
+    loop_var: client
 
 - name: 'db | add groups'
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_groups_insert }} ({{ item.id }}, {{ item.enabled|int }}, \"{{ item.name }}\", \"{{ item.description }}\")"'

@@ -4,6 +4,8 @@
 ###############################################################################
 # Define Adlist sources for generating domain blocklists.
 #
+# stevenblack's hosts adlist is automatically added when installing as ID 1.
+#
 # pihole_ad_sources:
 #   - id: int (unique id starting at 1)
 #     address: str (URL for adlist)
@@ -13,7 +15,6 @@
 # Reference:
 # * https://docs.pi-hole.net/database/gravity/#adlist-table-adlist
 
-# Pi-Hole currently adds the stevenblack adlist when installing, as ID 1.
 pihole_ad_sources:
   - id: 1
     address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
@@ -43,12 +44,14 @@ pihole_domain_blocklists: []
 ###############################################################################
 # Pi-Hole Clients Table
 ###############################################################################
-# Define Pi-Hole clients.
+# Define Pi-Hole clients. All clients are automatically added to the 'Default'
+# group in Pi-Hole to automatically enforce blocking.
 #
 # pihole_clients:
 #   - id: int (unique id starting at 1)
 #     ip: str (IPv4,IPv6,CIDR)
 #     comment: str (user comment)
+#     remove_default_group: bool (remove from automatic 'Default' group)
 #
 # Reference:
 # * https://docs.pi-hole.net/database/gravity/#client-table-client
@@ -60,6 +63,10 @@ pihole_clients: []
 ###############################################################################
 # Define Pi-Hole group management.
 #
+# Group 'Default' (id 0) is special as it is automatically assigned to domains
+# and clients not being a member of other groups. Each newly added client or
+# domain gets assigned to group zero when being added.
+#
 # pihole_groups:
 #   - id: int (unique id starting at 1)
 #     enabled: bool (enable use)
@@ -69,7 +76,11 @@ pihole_clients: []
 # Reference:
 # * https://docs.pi-hole.net/database/gravity/groups/#group-management
 
-pihole_groups: []
+pihole_groups:
+  - id: 0
+    enabled: true
+    name: 'Default'
+    description: 'The default group'
 
 ###############################################################################
 # Pi-Hole Groups Adlist Table
@@ -88,7 +99,7 @@ pihole_ad_groups_blocklist: []
 ###############################################################################
 # Pi-Hole Groups Clients Table
 ###############################################################################
-# Define Pi-Hole group clients management.
+# Define Pi-Hole group clients blocklists management.
 #
 # pihole_ad_groups_blocklist:
 #   - client_id: int (existing client ID)

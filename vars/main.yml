@@ -31,4 +31,5 @@ pihole_default_client_insert: 'insert or replace into \"client\" (id, ip, commen
 pihole_default_groups_insert: 'insert or replace into \"group\" (id, enabled, name, description) values'
 pihole_default_ad_groups_insert: 'insert or replace into \"adlist_by_group\" (adlist_id, group_id) values'
 pihole_default_client_groups_insert: 'insert or replace into \"client_by_group\" (client_id, group_id) values'
+pihole_default_client_groups_delete_default: 'delete from \"client_by_group\" where group_id = 0 and client_id = '
 pihole_default_domain_groups_insert: 'insert or replace into \"domainlist_by_group\" (domainlist_id, group_id) values'

@@ -1,0 +1,26 @@
+---
+###############################################################################
+# Pi-Hole Clear Databases
+###############################################################################
+# Removes existing databases for Pi-Hole to rebuild on restart. This enables
+# idempotent role application for Pi-Hole.
+#
+# Given the DB triggers and simplistic nature of handling clients; major
+# changes to clients and groups (including additions, removals) **WILL** lead
+# to a skew in the actual database versus what the role explicitly codifies.
+#
+# By removing the databases before applying changes, this enables consistent
+# application at the expense of recreating the DB's and downloading/rebuilding
+# blocklists each run.
+
+- name: 'clear databases | remove databases'
+  ansible.builtin.file:
+    path:  '/etc/pihole/{{ item }}'
+    state: 'absent'
+  loop:
+    - 'gravity.db'
+    - 'pihole-FTL.db'
+
+- name: 'clear databases | regenerate databases'
+  ansible.builtin.command: '/etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended'
+  changed_when: false

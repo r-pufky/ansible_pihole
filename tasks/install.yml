@@ -29,7 +29,7 @@
 - name: 'install | create /etc/pihole'
   ansible.builtin.file:
     path:  '/etc/pihole'
-    mode:  0755
+    mode:  0775
     state: 'directory'
 
 - name: 'install | WARNING ROLE BEHAVIOR CHANGED'

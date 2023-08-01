@@ -1,4 +1,4 @@
 ---
 - ansible.builtin.import_tasks: install.yml
-- ansible.builtin.import_tasks: db.yml
+- ansible.builtin.import_tasks: db/db.yml
 - ansible.builtin.import_tasks: update.yml
