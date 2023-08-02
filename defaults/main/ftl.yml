@@ -102,8 +102,6 @@ pihole_ftl_block_ipv4: ''
 # Default: '' (autodetect).
 pihole_ftl_block_ipv6: ''
 
-# DROP|ALLOW|BLOCK|REFUSE
-
 # When gravity database is locked/busy, how should Pi-hole handle queries?
 #
 # Datatype: string

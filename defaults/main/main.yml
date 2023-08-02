@@ -47,36 +47,213 @@ pihole_idempotent: false
 ###############################################################################
 # Pi-Hole setupVars.conf
 ###############################################################################
+# Setup vars allows for unattended deployments of pihole; however these options
+# are generally undocumented except via reading installer code or playing with
+# WebUI options.
+#
+# Documented usage here reflect code and WebUI analysis. These may change over
+# time and should be re-validated from time to time.
+#
+# Reference:
+# * https://github.com/pi-hole/pi-hole/blob/899cac0aac8e86f36f5b9aaac67c58922be8c79e/pihole
+# * https://github.com/pi-hole/pi-hole/blob/899cac0aac8e86f36f5b9aaac67c58922be8c79e/advanced/Scripts/webpage.sh
+# * https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 
-pihole_blocking_enabled:   true
-pihole_admin_email:        ''
+# Globally toggle pihole adlist blocking. Default: True.
+pihole_blocking_enabled: true
+
+# Email address that will be linked on the block page. Default: ''.
+pihole_admin_email: ''
+
+# WebUI layout style.
+#
+# Datatype: string
+# Special case:
+# * boxed:
+#     Constrain interface horizontally - for larger screens (default).
+# * traditional:
+#     Unconstrained interface (100% width).
 pihole_webui_boxed_layout: 'boxed'
-pihole_webtheme:           'default-dark'
-# A random password will be set if empty.
-pihole_webpassword:           ''
-pihole_dnsmasq_listening:     'single'
-pihole_dns_fqdn_required:     false
-pihole_dns_bogus_priv:        false
-pihole_dnssec:                false
-pihole_rev_server:            false
-pihole_rev_server_cidr:       "{{ ansible_default_ipv4.address | ansible.utils.ipaddr('network/prefix') }}"
-pihole_rev_server_target:     '{{ ansible_default_ipv4.gateway }}'
-pihole_rev_server_domain:     'lan'
-pihole_pihole_interface:      '{{ ansible_default_ipv4.interface }}'
-pihole_ipv4_address:          "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.ipaddr('address/prefix') }}"
-pihole_ipv6_address:          ''
-pihole_dhcp_active:           false
-pihole_dhcp_start:            "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.nthhost(200) }}"
-pihole_dhcp_end:              "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.nthhost(-5) }}"
-pihole_dhcp_router:           '{{ ansible_default_ipv4.gateway }}'
-pihole_dhcp_leasetime:        24
-pihole_pihole_domain:         'lan'
-pihole_dhcp_ipv6:             false
-pihole_dhcp_rapid_commit:     false
-pihole_pihole_dns_1:          "{{ ansible_dns.nameservers | ansible.utils.ipv4() | first | default('1.1.1.1') }}#53"
-pihole_pihole_dns_2:          ''
-pihole_query_logging:         true
-pihole_install_web_server:    true
+
+# WebUI Theme.
+#
+# Datatype: string
+# Special case:
+# * default-light:
+#     Pi-hole default theme (light).
+# * default-dark:
+#     Pi-hole midnight theme (dark) (default).
+# * default-darker:
+#     Pi-hole deep-midnight theme (dark).
+# * high-contrast:
+#     High contrast light.
+# * high-contrast-dark:
+#     High contrast dark.
+# * default-auto:
+#     Pi-hole auto theme (light/dark).
+# * lcars:
+#     Star Trek LCARS theme (dark).
+pihole_webtheme: 'default-dark'
+
+# WebUI Password. A random password will be set if empty. Default: ''.
+pihole_webpassword: ''
+
+# dnsmasq listening interface. Default: 'local'.
+#
+# Datatype: string
+# Special case:
+# * local:
+#     Allow only local subnets. Listen on all interfaces but only allow local
+#     subnets. This became the default setting in 2021-12, previously it was
+#     'single'.
+#
+#     Reference:
+#     * https://discourse.pi-hole.net/t/proper-dnsmasq-listening-setting/54299
+# * single:
+#     Respond only on single interface; use eth0 as a fallback (default).
+# * bind:
+#     Bind only to a single interface; using eth0 as a fallback.
+# * all:
+#     Permit all origins. Listen on all interfaces.
+pihole_dnsmasq_listening: 'single'
+
+# Never forward non-FQDN A and AAAA queries. Default: False.
+#
+# When there is a Pi-hole domain set and this box is ticked, this asks FTL that
+# this domain is purely local and FTL may answer queries from /etc/hosts or
+# DHCP leases but should never forward queries on that domain to any upstream
+# servers. If Conditional Forwarding is enabled, unticking this box may cause a
+# partial DNS loop under certain circumstances (e.g. if a client would send TLD
+# DNSSEC queries).
+#
+# Important: Enabling may increase your privacy, but may also prevent you from
+# being able to access local hostnames if Pi-hole is not used as DHCP server.
+pihole_dns_fqdn_required: false
+
+# Never forward reverse lookups for private IP ranges. Default: False.
+#
+# All reverse lookups for private IP ranges (i.e., 192.168.0.x/24, etc.) which
+# are not found in /etc/hosts or the DHCP leases are answered with "no such
+# domain" rather than being forwarded upstream. The set of prefixes affected is
+# the list given in RFC6303.
+#
+# Important: Enabling may increase your privacy, but may also prevent you from
+# being able to access local hostnames if Pi-hole is not used as DHCP server.
+#
+# Reference:
+# * https://datatracker.ietf.org/doc/html/rfc6303
+pihole_dns_bogus_priv: false
+
+# Use DNSSEC. Default: False.
+#
+# Validate DNS replies and cache DNSSEC data. When forwarding DNS queries,
+# Pi-hole requests the DNSSEC records needed to validate the replies. If a
+# domain fails validation or the upstream does not support DNSSEC, this setting
+# can cause issues resolving domains. Use an upstream DNS server which supports
+# DNSSEC when activating DNSSEC. Note that the size of your log might increase
+# significantly when enabling DNSSEC. A DNSSEC resolver test can be found here.
+#
+# Reference:
+# * https://wander.science/projects/dns/dnssec-resolver-test/
+pihole_dnssec: false
+
+# Use conditional fowarding. Default: False.
+#
+# Forward queries to a local upstream DNS server. If using Pi-Hole's DNS server
+# as authoritative for your local domain name False is appropriate.
+pihole_rev_server: false
+
+# Reverse DNS zone. Default: '{AUTODETECTED NETWORK CIDR}'.
+#
+# If pihole_rev_server is enabled, forward DNS queries from given zone to
+# pihole_rev_server_target. Uses CIDR notation.
+pihole_rev_server_cidr: "{{ ansible_default_ipv4.address | ansible.utils.ipaddr('network/prefix') }}"
+
+# Local network router. Default: '{AUTODETECTED NETWORK GATEWAY}'.
+#
+# If pihole_rev_server is enabled, direct forward DNS queries that can't be
+# answered to this server. The target needs to be a DNS server that is
+# authoritative for your local domain and is going to be a local upstream DNS
+# server inside your home network.
+#
+# It may be appropriate to set this to the IP address of your router which will
+# likely just relay any queries to your ISP's DNS servers (unless it is running
+# a DNS server as well). Anything forwarded outside of your local network are
+# unlikely to be able to resolve queries for names in your private  domain, and
+# won't be able to do anything sensible with reverse queries if your home
+# network uses RFC1918 addressing.
+#
+# Reference:
+# * https://datatracker.ietf.org/doc/html/rfc1918
+pihole_rev_server_target: '{{ ansible_default_ipv4.gateway }}'
+
+# Local domain name. Default: 'lan'.
+#
+# If pihole_rev_server is enabled, append the local domain to unqualified
+# hosts.
+pihole_rev_server_domain: 'lan'
+
+# Networking interface to use. Default: '{AUTODETECTED INTERFACE}'.
+#
+# Use specified interface for pihole. Hardcorded default of 'eth0' if no
+# interface is defined.
+pihole_pihole_interface: '{{ ansible_default_ipv4.interface }}'
+
+# IPv4 CIDR networking address for Pi-Hole. Default: '{AUTODETECTED CIDR}'.
+pihole_ipv4_address: "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.ipaddr('address/prefix') }}"
+
+# IPv6 networking address for Pi-Hole. Default: '' (disabled).
+pihole_ipv6_address: ''
+
+# Enable DHCP server. Default: False.
+pihole_dhcp_active: false
+
+# DHCP IPv4 address start range. Default: '{AUTODETECTED CIDR or x.x.x.200}'.
+pihole_dhcp_start: "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.nthhost(200) }}"
+
+# DHCP IPv4 address end range. Default: '{AUTODETECTED CIDR or x.x.x.251}'.
+pihole_dhcp_end: "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ansible.utils.nthhost(-5) }}"
+
+# DHCP IPv4 Gateway. Default: '{AUTODETECTED}'.
+pihole_dhcp_router: '{{ ansible_default_ipv4.gateway }}'
+
+# DHCP lease time in hours. Default: 24.
+pihole_dhcp_leasetime: 24
+
+# Pi-Hole domain. Default: 'lan'.
+pihole_pihole_domain: 'lan'
+
+# Enable DHCP IPv6 support. Default: False.
+pihole_dhcp_ipv6: false
+
+# Enable DHCP rapid commit (fast address assignment). Default: False.
+pihole_dhcp_rapid_commit: false
+
+# Upstream DNS servers. Default: '{AUTODETECTED or 1.1.1.1}'.
+#
+# The first DNS server is autodetected based on the networking interface or
+# defaults to 1.1.1.1 (cloudflare DNS). Use IP#PORT format.
+#
+# Queried in order. Empty disables.
+pihole_pihole_dns_1: "{{ ansible_dns.nameservers | ansible.utils.ipv4() | first | default('1.1.1.1') }}#53"
+pihole_pihole_dns_2: ''
+pihole_pihole_dns_3: ''
+pihole_pihole_dns_4: ''
+
+# Log queries (see pihole_ftl_privacylevel for privacy levels). Default: True.
+pihole_query_logging: true
+
+# Install Pi-Hole web server (lighttpd). Default: True.
+pihole_install_web_server:  true
+
+# Install Pi-Hole WebUI (served on lighttpd). Default: True.
 pihole_install_web_interface: true
-pihole_lighttpd_enabled:      true
+
+# Enable lighttpd service. Default: True.
+pihole_lighttpd_enabled: true
+
+# DNS query cache size. Default: 10000.
+#
+# Reference:
+# * https://docs.pi-hole.net/ftldns/cache_dump/#cache-metrics
 pihole_cache_size:            10000
