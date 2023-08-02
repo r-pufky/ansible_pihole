@@ -89,6 +89,9 @@ site.yml
   roles:
      - 'r_pufky.pihole'
 ```
+If multiple pihole servers are configured, it is highly recommended to use
+`serial: 1`. This will apply changes to pihole server individually allowing for
+changes to be applied without DNS service interruption.
 
 ## Versions
 
@@ -97,6 +100,7 @@ site.yml
 * Add idempotent operational toggle.
 * Standardize setupvars to YAML datatypes (no existing change required).
 * Enable management of default adlist.
+* Document undocumented 'setupvars.conf' options.
 
 Consumers who have set custom FTL settings should ensure they have set these in
 *_vars before applying this version. See:

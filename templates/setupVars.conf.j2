@@ -20,7 +20,15 @@ DHCP_IPv6={{ pihole_dhcp_ipv6 | bool | lower }}
 DHCP_rapid_commit={{ pihole_dhcp_rapid_commit | bool | lower }}
 PIHOLE_INTERFACE={{ pihole_pihole_interface }}
 PIHOLE_DNS_1={{ pihole_pihole_dns_1 }}
+{% if pihole_pihole_dns_2|length > 0 %}
 PIHOLE_DNS_2={{ pihole_pihole_dns_2 }}
+{% endif %}
+{% if pihole_pihole_dns_3|length > 0 %}
+PIHOLE_DNS_3={{ pihole_pihole_dns_3 }}
+{% endif %}
+{% if pihole_pihole_dns_3|length > 0 %}
+PIHOLE_DNS_4={{ pihole_pihole_dns_4 }}
+{% endif %}
 QUERY_LOGGING={{ pihole_query_logging | bool | lower }}
 INSTALL_WEB_SERVER={{ pihole_install_web_server | bool | lower }}
 INSTALL_WEB_INTERFACE={{ pihole_install_web_interface | bool | lower }}
