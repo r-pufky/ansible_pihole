@@ -59,6 +59,18 @@
     mode:  0644
   notify: 'restart pihole dns'
 
+- name: 'install | create pihole group'
+  ansible.builtin.group:
+    name: pihole
+
+- name: 'install | create pihole user'
+  ansible.builtin.user:
+    name: pihole
+    create_home: false
+    group: pihole
+    shell: /usr/sbin/nologin
+    system: true
+
 - name: 'install | set FTL config'
   ansible.builtin.template:
     src: 'pihole-FTL.conf.j2'
