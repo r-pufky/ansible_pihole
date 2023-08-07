@@ -101,7 +101,7 @@ pihole_ad_groups_blocklist: []
 ###############################################################################
 # Define Pi-Hole group clients blocklists management.
 #
-# pihole_ad_groups_blocklist:
+# pihole_client_groups_blocklist:
 #   - client_id: int (existing client ID)
 #     group_id: int (existing group ID)
 #
@@ -115,7 +115,7 @@ pihole_client_groups_blocklist: []
 ###############################################################################
 # Define Pi-Hole group domain blocklists management.
 #
-# pihole_ad_groups_blocklist:
+# pihole_domain_groups_blocklist:
 #   - domainlist_id: int (existing domain blocklist ID)
 #     group_id: int (existing group ID)
 #
