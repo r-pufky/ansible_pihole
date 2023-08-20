@@ -1,3 +1,8 @@
+---
 skip_list:
   - unnamed-task   # unnamed tasks are used as includes.
   - package-latest # allow 'latest' packages.
+warn_list:
+  - experimental
+exclude_paths:
+  - .github/workflows/
