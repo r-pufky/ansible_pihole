@@ -88,8 +88,8 @@
     - name: Fetch localhost endpoint
       ansible.builtin.uri:
         url: "{{ url }}"
-        validate_certs: no
-        return_content: yes
+        validate_certs: false
+        return_content: true
       register: web
       failed_when: false
     - name: Validate localhost endpoint

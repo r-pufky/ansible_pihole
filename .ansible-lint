@@ -4,5 +4,6 @@ skip_list:
   - package-latest # allow 'latest' packages.
 warn_list:
   - experimental
+  - no-changed-when
 exclude_paths:
   - .github/workflows/
