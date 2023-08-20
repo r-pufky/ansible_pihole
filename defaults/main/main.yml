@@ -7,7 +7,7 @@
 # to ensure consistency.
 #
 # Exact configuration state may be exported/imported with teleporter. this
-# provides a pre-configured deployement for Pi-Hole service.
+# provides a pre-configured deployment for Pi-Hole service.
 #
 # Configuration contains basic setup and domain blocking lists. Lists can be
 # set via Group Management -> Adlists; and updated via Tools -> Update Gravity.
@@ -157,7 +157,7 @@ pihole_dns_bogus_priv: false
 # * https://wander.science/projects/dns/dnssec-resolver-test/
 pihole_dnssec: false
 
-# Use conditional fowarding. Default: False.
+# Use conditional forwarding. Default: False.
 #
 # Forward queries to a local upstream DNS server. If using Pi-Hole's DNS server
 # as authoritative for your local domain name False is appropriate.

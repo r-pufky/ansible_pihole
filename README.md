@@ -7,7 +7,7 @@ Pi-Hole hosts should be configured with static IP's per Pi-Hole documentation.
 RedHat based support is **experimental** and best-effort only.
 
 ## Role Variables
-Settings have been throughly documented for usage.
+Settings have been thoroughly documented for usage.
 
 [defaults/main.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/main.yml).
 

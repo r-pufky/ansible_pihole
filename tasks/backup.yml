@@ -26,7 +26,7 @@
   ansible.builtin.debug:
     msg: |
 
-      BE SURE TO ENCRYPT BEFORE COMMITING CHANGES.
+      BE SURE TO ENCRYPT BEFORE COMMITTING CHANGES.
 
       ansible-vault encrypt '{{ pihole_local_backup }}'
 
