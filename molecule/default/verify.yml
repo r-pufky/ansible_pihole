@@ -1,0 +1,118 @@
+---
+
+- name: Verify
+  hosts: pihole_group
+  vars:
+    bin_filepath: /usr/local/bin/pihole
+    config_filepath: /etc/pihole/pihole-FTL.conf
+    ports:
+      # https://docs.pi-hole.net/main/prerequisites/#ports
+      - { h: 0.0.0.0, p: 53 }
+      - { h: localhost, p: 80 }
+      - { h: localhost, p: 4711 }
+    url: http://localhost
+    is_container: false
+  pre_tasks:
+    - name: Debug | var ansible_virtualization_type
+      ansible.builtin.debug:
+        var: ansible_virtualization_type
+    - name: Set fact is_container
+      ansible.builtin.set_fact:
+        is_container: true
+      when: >
+        (ansible_virtualization_type is defined and
+          (ansible_virtualization_type == "docker" or ansible_virtualization_type == "containerd"
+           or ansible_virtualization_type == "container"
+          )
+        )
+    - name: RedHat | install procps-ng
+      ansible.builtin.package:
+        name: procps-ng
+        state: present
+      when: ansible_os_family == "RedHat"
+    - name: Debian | install procps
+      ansible.builtin.package:
+        name: procps
+        state: present
+      when: ansible_os_family == "Debian"
+  tasks:
+
+    - name: Ensure bin file is present
+      ansible.builtin.stat:
+        path: "{{ bin_filepath }}"
+      register: bin
+    - name: Validate bin present
+      ansible.builtin.assert:
+        that:
+          - bin.stat.exists
+          - bin.stat.size != 0
+          - bin.stat.mode == '0755'
+
+    - name: Check config file
+      ansible.builtin.stat:
+        path: "{{ config_filepath }}"
+      register: cfg
+    - name: Validate configuration file is present
+      ansible.builtin.assert:
+        that: cfg.stat.exists and cfg.stat.size != 0
+
+    - name: Ensure process is running
+      ansible.builtin.command: pgrep pihole
+      register: ps
+      changed_when: false
+      failed_when: false
+    - name: Validate ps output
+      ansible.builtin.assert:
+        that: ps.stdout
+      when:
+        - not is_container|bool
+
+    - name: Check all processes
+      ansible.builtin.command: ps aux
+      changed_when: false
+      register: psa
+    - name: Debug | ps aux output
+      ansible.builtin.debug:
+        var: psa
+        verbosity: 1
+
+    - name: Ensure ports are listening
+      ansible.builtin.wait_for:
+        host: "{{ item.h }}"
+        port: "{{ item.p }}"
+        timeout: 10
+      with_items: "{{ ports }}"
+      when:
+        - not is_container|bool
+
+    - name: Fetch localhost endpoint
+      ansible.builtin.uri:
+        url: "{{ url }}"
+        validate_certs: no
+        return_content: yes
+      register: web
+      failed_when: false
+    - name: Validate localhost endpoint
+      ansible.builtin.assert:
+        that:
+          - web.status == 200
+      when:
+        - not is_container|bool
+
+    - name: Ensure pihole version
+      ansible.builtin.command: pihole version
+      register: dns1
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure pihole status
+      ansible.builtin.command: pihole status
+      register: dns1
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure pihole resolution
+      ansible.builtin.command: nslookup pi.hole
+      register: dns1
+      changed_when: false
+      failed_when: false
