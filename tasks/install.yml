@@ -58,7 +58,7 @@
     owner: 'root'
     group: 'root'
     mode:  '0644'
-  notify: 'restart pihole dns'
+  notify: 'Restart pihole dns'
 
 - name: 'Install | set binary location'
   ansible.builtin.stat:
