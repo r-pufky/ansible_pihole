@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install ansible-lint flake8 yamllint
+          pip3 install ansible-lint flake8 yamllint netaddr
           which ansible
           pip3 install ansible
           pip3 show ansible
