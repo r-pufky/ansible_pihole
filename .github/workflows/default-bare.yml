@@ -85,10 +85,10 @@ jobs:
         continue-on-error: true
       - name: After script - systemd
         run: |
-          systemctl -l --no-pager status pihole || true
+          systemctl -l --no-pager status pihole-FTL || true
           systemd-analyze --no-pager security || true
-          systemd-analyze --no-pager security pihole || true
-          systemd-analyze --no-pager verify pihole || true
+          systemd-analyze --no-pager security pihole-FTL || true
+          systemd-analyze --no-pager verify pihole-FTL || true
           rsyslogd -v
         if: ${{ always() }}
         continue-on-error: true
@@ -105,6 +105,16 @@ jobs:
           pihole version
           pihole status
           nslookup pi.hole
+          resolvectl status
           ss -tunap | grep LISTEN
+        if: ${{ always() }}
+        continue-on-error: true
+      - name: After script - dig
+        run: |
+          set -x
+          dig @localhost pi.hole
+          dig @localhost cnn.com
+          dig @localhost wy.adyboh.com
+          dig @localhost carniferou.club
         if: ${{ always() }}
         continue-on-error: true
