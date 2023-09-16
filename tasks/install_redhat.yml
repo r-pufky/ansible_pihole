@@ -31,6 +31,12 @@
     line:   'SELINUX=permissive'
     state:  'present'
 
+- name: RedHat | Ensure FedoraServer zone exists
+  ansible.posix.firewalld:
+    zone: FedoraServer
+    permanent: true
+    state: present
+
 - name: 'Redhat | enable pihole traffic in default zone'
   ansible.posix.firewalld:
     zone:    'FedoraServer'
