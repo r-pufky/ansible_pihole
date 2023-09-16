@@ -6,7 +6,7 @@ driver:
   name: docker
 platforms:
   - name: instance
-    image: ${MOLECULE_DISTRO:-ubuntu:20.04}
+    image: nmusatti/${MOLECULE_DISTRO:-ubuntu2004}-pys-systemd
     # env:
     #   http_proxy: ${http_proxy}
     #   https_proxy: ${https_proxy}
