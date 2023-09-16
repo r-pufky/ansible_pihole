@@ -24,6 +24,7 @@ pihole_default_packages_rpm:
   - python3-libselinux
   - policycoreutils-python-utils
   - python3-firewall
+  - firewalld
 
 ###############################################################################
 # Default Pi-Hole gravity.db queries
