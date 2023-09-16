@@ -20,6 +20,8 @@ jobs:
       max-parallel: 4
       matrix:
         include:
+          - molecule_distro: 'fedora37'
+            experimental: false
           - molecule_distro: 'rockylinux9'
             experimental: false
           - molecule_distro: 'rockylinux8'
