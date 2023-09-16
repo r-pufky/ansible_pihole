@@ -23,9 +23,9 @@ jobs:
           - molecule_distro: 'fedora37'
             experimental: false
           - molecule_distro: 'rockylinux9'
-            experimental: false
+            experimental: true
           - molecule_distro: 'rockylinux8'
-            experimental: false
+            experimental: true
           - molecule_distro: 'ubuntu2204'
             experimental: false
           - molecule_distro: 'ubuntu2004'
