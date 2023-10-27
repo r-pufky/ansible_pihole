@@ -1,0 +1,66 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: libvirt
+    type: libvirt
+    options:
+      memory: 4096 # lol, ubuntu 22.04 will deadlock on boot due to lack of memory.
+      cpus: 1
+platforms:
+  - name: test-pihole-ubuntu2004
+    box: generic/ubuntu2004
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.10.10
+    groups:
+      - pihole
+  # Deadlocks on boot due to lack of memory? fuck ubuntu
+  - name: test-pihole-ubuntu2204
+    #box: generic/ubuntu2204 - currently the full ubuntu2204 generic image kernel deadlocks on boot.
+    box: jaredeh/ubuntu2204-server
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.10.20
+    groups:
+      - pihole
+  - name: test-pihole-debian-bullseye
+    box: debian/bullseye64
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.10.80
+    groups:
+      - pihole
+# lint:
+#   name: yamllint
+provisioner:
+  name: ansible
+  connection_options:
+    ansible_ssh_user: vagrant
+    ansible_become: true
+  log: true
+  lint:
+    name: ansible-lint
+  config_options:
+    defaults:
+      verbosity: 3
+  inventory:
+    host_vars:
+      test-pihole-ubuntu2004:
+        host_specific_variable: test value
+      test-pihole-ubuntu2204:
+        host_specific_variable: test value
+      test-pihole-debian-bullseye:
+        host_specific_variable: test value
+scenario:
+  name: default
+verifier:
+  name: ansible
