@@ -66,4 +66,6 @@
 
 - name: 'db | update gravity adlists'
   ansible.builtin.command: 'pihole -g'
-  when: not pihole_installed
+  when: >
+    not pihole_installed or
+    (pihole_idempotent and not pihole_update_enable)
