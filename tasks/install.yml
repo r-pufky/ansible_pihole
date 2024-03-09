@@ -19,7 +19,7 @@
     name:  '{{ pihole_default_packages_apt }}'
     state: 'latest'
     update_cache: true
-  when: ansible_distribution == 'Debian'
+  when: ansible_os_family == 'Debian'
 
 # Handles free versions of RedHat.
 - name: Import install_redhat
@@ -79,6 +79,8 @@
 
 - name: 'Install | install'
   ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
+  environment:
+    DEBIAN_FRONTEND: noninteractive
   when: not pihole_installed
 
 - name: 'Install | set FTL config'
