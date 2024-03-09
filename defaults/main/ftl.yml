@@ -308,7 +308,7 @@ pihole_ftl_check_load: true
 # * 90:
 #     Warn when shared memory is 90%+ (default).
 # * 100:
-#     Warn when shared memroy is full. Maxmimum value.
+#     Warn when shared memory is full. Maximum value.
 pihole_ftl_check_shmem: 90
 
 # Warn if disk usage holding any crucial file exceeds percentage.
@@ -322,7 +322,7 @@ pihole_ftl_check_shmem: 90
 # * 90:
 #     Warn when disk usage is 90%+ (default).
 # * 100:
-#     Warn when disk is full. Maxmimum value.
+#     Warn when disk is full. Maximum value.
 pihole_ftl_check_disk: 90
 
 ###############################################################################

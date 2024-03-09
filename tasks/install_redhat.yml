@@ -18,20 +18,26 @@
 
       https://github.com/r-pufky/ansible_pihole/issues/10
 
-- name: 'redhat | install dependencies'
+- name: 'Redhat | install dependencies'
   ansible.builtin.dnf:
     name:  '{{ pihole_default_packages_rpm }}'
     state: 'latest'
     update_cache: true
 
-- name: 'redhat | set SELinux to permissive'
+- name: 'Redhat | set SELinux to permissive'
   ansible.builtin.lineinfile:
     path:   '/etc/sysconfig/selinux'
     regexp: '^SELINUX=enforcing'
     line:   'SELINUX=permissive'
     state:  'present'
 
-- name: 'redhat | enable pihole traffic in default zone'
+- name: RedHat | Ensure FedoraServer zone exists
+  ansible.posix.firewalld:
+    zone: FedoraServer
+    permanent: true
+    state: present
+
+- name: 'Redhat | enable pihole traffic in default zone'
   ansible.posix.firewalld:
     zone:    'FedoraServer'
     service: '{{ item }}'
@@ -43,20 +49,20 @@
     - 'dhcp'
     - 'dhcpv6'
 
-- name: 'redhat | create pihole firewalld zone'
+- name: 'Redhat | create pihole firewalld zone'
   ansible.posix.firewalld:
     zone:  'pihole'
     state: 'present'
     permanent: true
 
-- name: 'redhat | add local interface for pihole ftl service'
+- name: 'Redhat | add local interface for pihole ftl service'
   ansible.posix.firewalld:
     zone:  'pihole'
     interface: 'lo'
     permanent: true
     state: 'enabled'
 
-- name: 'redhat | enable ftl traffic to local interface'
+- name: 'Redhat | enable ftl traffic to local interface'
   ansible.posix.firewalld:
     zone:  'pihole'
     port:  '4711/tcp'

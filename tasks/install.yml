@@ -14,7 +14,7 @@
 # * https://r-pufky.github.io/docs/services/pihole/setup.html#service-pihole-setup
 # * https://gist.github.com/bendews/e09edfc60e581ec4c686c4b70297f543
 
-- name: 'install | install dependencies'
+- name: 'Install | install dependencies'
   ansible.builtin.apt:
     name:  '{{ pihole_default_packages_apt }}'
     state: 'latest'
@@ -22,17 +22,18 @@
   when: ansible_os_family == 'Debian'
 
 # Handles free versions of RedHat.
-- ansible.builtin.import_tasks: install_redhat.yml
+- name: Import install_redhat
+  ansible.builtin.import_tasks: install_redhat.yml
   when: ansible_os_family == 'RedHat'
 
 # Pi-Hole will set correct permissions on install and startup.
-- name: 'install | create /etc/pihole'
+- name: 'Install | create /etc/pihole'
   ansible.builtin.file:
     path:  '/etc/pihole'
-    mode:  0775
+    mode:  '0775'
     state: 'directory'
 
-- name: 'install | WARNING ROLE BEHAVIOR CHANGED'
+- name: 'Install | WARNING ROLE BEHAVIOR CHANGED'
   ansible.builtin.debug:
     msg: |
       This role has breaking changes from previous versions.
@@ -44,31 +45,31 @@
       Disable this message by setting 'pihole_disable_warning' to true.
   when: not pihole_disable_warning
 
-- name: 'config | pause until manually confirmed'
+- name: 'Config | pause until manually confirmed'
   ansible.builtin.pause:
     echo:    false
     seconds: 30
   when: not pihole_disable_warning
 
-- name: 'install | set deployment config'
+- name: 'Install | set deployment config'
   ansible.builtin.template:
     src:   'setupVars.conf.j2'
     dest:  '/etc/pihole/setupVars.conf'
     owner: 'root'
     group: 'root'
-    mode:  0644
-  notify: 'restart pihole dns'
+    mode:  '0644'
+  notify: 'Restart pihole dns'
 
-- name: 'install | set binary location'
+- name: 'Install | set binary location'
   ansible.builtin.stat:
     path: '/usr/local/bin/pihole'
   register: _pihole_binary
 
-- name: 'install | determine if pihole is installed'
+- name: 'Install | determine if pihole is installed'
   ansible.builtin.set_fact:
-    pihole_installed: '{{ _pihole_binary.stat.exists|default(false) }}'
+    pihole_installed: '{{ _pihole_binary.stat.exists | default(false) }}'
 
-- name: 'install | fetching latest installer'
+- name: 'Install | fetching latest installer'
   ansible.builtin.get_url:
     url:  'https://install.pi-hole.net'
     dest: '/tmp/pihole-install.sh'
@@ -76,20 +77,20 @@
   ignore_errors: '{{ ansible_check_mode }}'
   when: not pihole_installed
 
-- name: 'install | install'
+- name: 'Install | install'
   ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
   environment:
     DEBIAN_FRONTEND: noninteractive
   when: not pihole_installed
 
-- name: 'install | set FTL config'
+- name: 'Install | set FTL config'
   ansible.builtin.template:
     src: 'pihole-FTL.conf.j2'
     dest: '/etc/pihole/pihole-FTL.conf'
     owner: 'pihole'
     group: 'root'
-    mode: 0664 # installed permissions.
-  notify: 'restart pihole dns'
+    mode: '0664' # installed permissions.
+  notify: 'Restart pihole dns'
 
 # Generate random password if no password is set.
 #
@@ -99,11 +100,11 @@
 # Reference:
 # * https://medium.com/@AbhijeetKasurde/ansible-generating-random-string-using-password-lookup-plugin-7cd3431a0d0
 # * https://discourse.pi-hole.net/t/what-is-setupvars-conf-and-how-do-i-use-it/3533/5
-- name: 'install | set random password (no install password set)'
+- name: 'Install | set random password (no install password set)'
   ansible.builtin.command: "pihole -a -p {{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
   when: pihole_webpassword|string|length == 0
 
-- name: 'install | set password'
+- name: 'Install | set password'
   ansible.builtin.command: 'pihole -a -p {{ pihole_webpassword }}'
   when: pihole_webpassword|string|length > 0
   no_log: true # password

@@ -8,7 +8,7 @@
 # * https://docs.pi-hole.net/core/pihole-command/#teleport
 
 # Teleporter dump created with execution timestamp. backup & standardize.
-- name: 'backup | create backup' # noqa no-changed-when always execute
+- name: 'Backup | create backup' # noqa no-changed-when always execute
   ansible.builtin.shell: |
     cd /root &&
     pihole -a -t &&
@@ -16,21 +16,21 @@
   args:
     warn: false
 
-- name: 'backup | retrieve backup'
+- name: 'Backup | retrieve backup'
   ansible.builtin.fetch:
     src:  '/root/pihole.tar.gz'
     dest: '{{ pihole_local_backup }}'
     flat: true
 
-- name: 'backup | ENCRYPTION NOTICE'
+- name: 'Backup | ENCRYPTION NOTICE'
   ansible.builtin.debug:
     msg: |
 
-      BE SURE TO ENCRYPT BEFORE COMMITING CHANGES.
+      BE SURE TO ENCRYPT BEFORE COMMITTING CHANGES.
 
       ansible-vault encrypt '{{ pihole_local_backup }}'
 
-- name: 'backup | cleanup'
+- name: 'Backup | cleanup'
   ansible.builtin.file:
     path:  '{{ item }}'
     state: 'absent'
