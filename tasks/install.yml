@@ -1,6 +1,6 @@
 ---
 ###############################################################################
-# Pi-Hole Install
+# Pi-Hole install
 ###############################################################################
 # DNS blackhole.
 #
@@ -14,62 +14,32 @@
 # * https://r-pufky.github.io/docs/services/pihole/setup.html#service-pihole-setup
 # * https://gist.github.com/bendews/e09edfc60e581ec4c686c4b70297f543
 
-- name: 'Install | install dependencies'
-  ansible.builtin.apt:
-    name:  '{{ pihole_default_packages_apt }}'
-    state: 'latest'
-    update_cache: true
-  when: ansible_os_family == 'Debian'
-
-# Handles free versions of RedHat.
-- name: Import install_redhat
-  ansible.builtin.import_tasks: install_redhat.yml
-  when: ansible_os_family == 'RedHat'
-
 # Pi-Hole will set correct permissions on install and startup.
-- name: 'Install | create /etc/pihole'
+- name: 'install | create /etc/pihole'
   ansible.builtin.file:
     path:  '/etc/pihole'
     mode:  '0775'
     state: 'directory'
 
-- name: 'Install | WARNING ROLE BEHAVIOR CHANGED'
-  ansible.builtin.debug:
-    msg: |
-      This role has breaking changes from previous versions.
-
-      ABORT and verify configuration before proceeding:
-
-      https://github.com/r-pufky/ansible_pihole/tree/main/defaults/main
-
-      Disable this message by setting 'pihole_disable_warning' to true.
-  when: not pihole_disable_warning
-
-- name: 'Config | pause until manually confirmed'
-  ansible.builtin.pause:
-    echo:    false
-    seconds: 30
-  when: not pihole_disable_warning
-
-- name: 'Install | set deployment config'
+- name: 'install | set deployment config'
   ansible.builtin.template:
     src:   'setupVars.conf.j2'
     dest:  '/etc/pihole/setupVars.conf'
     owner: 'root'
     group: 'root'
     mode:  '0644'
-  notify: 'Restart pihole dns'
+  notify: 'restart pihole dns'
 
-- name: 'Install | set binary location'
+- name: 'install | set binary location'
   ansible.builtin.stat:
     path: '/usr/local/bin/pihole'
   register: _pihole_binary
 
-- name: 'Install | determine if pihole is installed'
+- name: 'install | determine if pihole is installed'
   ansible.builtin.set_fact:
     pihole_installed: '{{ _pihole_binary.stat.exists | default(false) }}'
 
-- name: 'Install | fetching latest installer'
+- name: 'install | fetching latest installer'
   ansible.builtin.get_url:
     url:  'https://install.pi-hole.net'
     dest: '/tmp/pihole-install.sh'
@@ -77,20 +47,27 @@
   ignore_errors: '{{ ansible_check_mode }}'
   when: not pihole_installed
 
-- name: 'Install | install'
-  ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
-  environment:
-    DEBIAN_FRONTEND: noninteractive
+- name: 'install | install'
+  block:
+    - name: 'install | standard install'
+      ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
+      when: not pihole_docker
+
+    - name: 'install | docker install'
+      ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      when: pihole_docker
   when: not pihole_installed
 
-- name: 'Install | set FTL config'
+- name: 'install | set FTL config'
   ansible.builtin.template:
     src: 'pihole-FTL.conf.j2'
     dest: '/etc/pihole/pihole-FTL.conf'
     owner: 'pihole'
     group: 'root'
     mode: '0664' # installed permissions.
-  notify: 'Restart pihole dns'
+  notify: 'restart pihole dns'
 
 # Generate random password if no password is set.
 #
@@ -100,11 +77,11 @@
 # Reference:
 # * https://medium.com/@AbhijeetKasurde/ansible-generating-random-string-using-password-lookup-plugin-7cd3431a0d0
 # * https://discourse.pi-hole.net/t/what-is-setupvars-conf-and-how-do-i-use-it/3533/5
-- name: 'Install | set random password (no install password set)'
+- name: 'install | set random password (no install password set)'
   ansible.builtin.command: "pihole -a -p {{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
   when: pihole_webpassword|string|length == 0
 
-- name: 'Install | set password'
+- name: 'install | set password'
   ansible.builtin.command: 'pihole -a -p {{ pihole_webpassword }}'
   when: pihole_webpassword|string|length > 0
   no_log: true # password

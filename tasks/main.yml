@@ -1,7 +1,37 @@
 ---
-- name: Import install
+###############################################################################
+# Pi-Hole main
+###############################################################################
+# No functional code belongs here.
+#
+# Executes sub-tasks for applying the pihole role and presents any warning
+# messages.
+
+- name: 'main | WARNING ROLE BEHAVIOR CHANGED'
+  ansible.builtin.debug:
+    msg: |
+      This role has breaking changes from previous versions.
+
+      ABORT and verify configuration before proceeding:
+
+      https://github.com/r-pufky/ansible_pihole/tree/main/defaults/main
+
+      Disable this message by setting 'pihole_disable_warning' to true.
+  when: not pihole_disable_warning
+
+- name: 'config | pause until manually confirmed'
+  ansible.builtin.pause:
+    echo:    false
+    seconds: "{{ pihole_default_timeout }}"
+  when: not pihole_disable_warning
+
+- name: 'import | deps'
+  ansible.builtin.import_tasks: deps.yml
+- name: 'import | os_prep'
+  ansible.builtin.import_tasks: os_prep.yml
+- name: 'import | install'
   ansible.builtin.import_tasks: install.yml
-- name: Import db
+- name: 'import | db'
   ansible.builtin.import_tasks: db/db.yml
-- name: Import update
+- name: 'import | update'
   ansible.builtin.import_tasks: update.yml

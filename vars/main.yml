@@ -4,27 +4,40 @@
 ###############################################################################
 # Default required packages for Pi-Hole install.
 
-pihole_default_packages_apt:
+pihole_default_packages_debian:
   - 'git'
   - 'iproute2'
   - 'whiptail'
   - 'ca-certificates'
   - 'sqlite3'
-  - 'apt-utils'
 
-pihole_default_packages_rpm:
+pihole_default_packages_ubuntu: "{{ pihole_default_packages_debian }}"
+
+pihole_default_packages_redhat:
   - 'git'
   - 'iproute'
   - 'ca-certificates'
   - 'sqlite'
   - 'newt'
-  - selinux-policy
-  - selinux-policy-devel
-  - setools-console
-  - python3-libselinux
-  - policycoreutils-python-utils
-  - python3-firewall
-  - firewalld
+
+###############################################################################
+# Default Pi-Hole Docker Package Dependencies
+###############################################################################
+# Additional packages required for Pi-Hole install in Docker environments.
+
+pihole_default_packages_debian_docker:
+  - 'apt-utils'
+
+pihole_default_package_ubuntu_docker: "{{ pihole_default_packages_debian_docker }}"
+
+pihole_default_packages_redhat_docker:
+  - 'selinux-policy'
+  - 'selinux-policy-devel'
+  - 'setools-console'
+  - 'python3-libselinux'
+  - 'policycoreutils-python-utils'
+  - 'python3-firewall'
+  - 'firewalld'
 
 ###############################################################################
 # Default Pi-Hole gravity.db queries
@@ -41,3 +54,11 @@ pihole_default_ad_groups_insert: 'insert or replace into \"adlist_by_group\" (ad
 pihole_default_client_groups_insert: 'insert or replace into \"client_by_group\" (client_id, group_id) values'
 pihole_default_client_groups_delete_default: 'delete from \"client_by_group\" where group_id = 0 and client_id = '
 pihole_default_domain_groups_insert: 'insert or replace into \"domainlist_by_group\" (domainlist_id, group_id) values'
+
+###############################################################################
+# Non-user Pi-Hole settings.
+###############################################################################
+# Settings not intended for end users.
+
+# Default warning message timeout in seconds. Default: 30.
+pihole_default_timeout: 30

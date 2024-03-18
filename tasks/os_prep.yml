@@ -1,0 +1,89 @@
+---
+###############################################################################
+# Pi-Hole OS specific configuration preparation.
+###############################################################################
+# OS specific PRE-configuration for proper pihole installation.
+#
+# Firewall changes are applied based on default firewall settings.
+#
+# All redhat issues should be assigned to: @rkoosaar
+#
+# Reference:
+# * https://github.com/r-pufky/ansible_pihole/issues/10
+
+- name: 'os prep | config redhat'
+  block:
+    - name: 'RedHat Support is Best Effort!'
+      ansible.builtin.debug:
+        msg: |
+          redhat support is currently best effort.
+
+          https://github.com/r-pufky/ansible_pihole/issues/10
+
+    - name: 'os prep | pause until manually confirmed'
+      ansible.builtin.pause:
+        echo:    false
+        seconds: "{{ pihole_default_timeout }}"
+      when: not pihole_disable_warning
+
+    - name: 'os prep | set SELinux to permissive'
+      ansible.builtin.lineinfile:
+        path:   '/etc/sysconfig/selinux'
+        regexp: '^SELINUX=enforcing'
+        line:   'SELINUX=permissive'
+        state:  'present'
+
+    - name: 'os prep | ensure fedoraserver zone exists'
+      ansible.posix.firewalld:
+        zone:  'FedoraServer'
+        permanent: true
+        state: 'present'
+
+    - name: 'os prep | enable pihole traffic in default zone'
+      ansible.posix.firewalld:
+        zone:    'FedoraServer'
+        service: '{{ item }}'
+        permanent: true
+        state:   'enabled'
+      loop:
+        - 'http'
+        - 'dns'
+        - 'dhcp'
+        - 'dhcpv6'
+
+    - name: 'os prep | create pihole firewalld zone'
+      ansible.posix.firewalld:
+        zone:  'pihole'
+        state: 'present'
+        permanent: true
+
+    - name: 'os prep | add local interface for pihole ftl service'
+      ansible.posix.firewalld:
+        zone:  'pihole'
+        interface: 'lo'
+        permanent: true
+        state: 'enabled'
+
+    - name: 'os prep | enable ftl traffic to local interface'
+      ansible.posix.firewalld:
+        zone:  'pihole'
+        port:  '4711/tcp'
+        permanent: true
+        state: 'enabled'
+  when: ansible_os_family == 'RedHat'
+
+- name: 'os prep | config ubuntu'
+  block:
+    - name: 'Ubuntu is Unsupported!'
+      ansible.builtin.debug:
+        msg: |
+          ubuntu is currently unsupported.
+
+          https://github.com/r-pufky/ansible_pihole/issues/10
+
+    - name: 'os prep | pause until manually confirmed'
+      ansible.builtin.pause:
+        echo:    false
+        seconds: "{{ pihole_default_timeout }}"
+      when: not pihole_disable_warning
+  when: ansible_os_family == 'Ubuntu'

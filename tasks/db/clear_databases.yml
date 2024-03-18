@@ -13,7 +13,7 @@
 # application at the expense of recreating the DB's and downloading/rebuilding
 # blocklists each run.
 
-- name: 'Clear databases | remove databases'
+- name: 'clear databases | remove databases'
   ansible.builtin.file:
     path:  '/etc/pihole/{{ item }}'
     state: 'absent'
@@ -21,6 +21,6 @@
     - 'gravity.db'
     - 'pihole-FTL.db'
 
-- name: 'Clear databases | regenerate databases'
+- name: 'clear databases | regenerate databases'
   ansible.builtin.command: '/etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended'
   changed_when: false

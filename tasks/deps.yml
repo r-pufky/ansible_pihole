@@ -1,0 +1,53 @@
+---
+###############################################################################
+# Pi-Hole dependencies.
+###############################################################################
+# Manage dependency installation for all platforms and VM's.
+
+- name: 'dependencies | debian'
+  block:
+    - name: 'dependencies | install debian docker packages'
+      ansible.builtin.apt:
+        name:  '{{ pihole_default_packages_debian_docker }}'
+        state: 'latest'
+        update_cache: true
+      when: pihole_docker
+
+    - name: 'dependencies | install debian packages'
+      ansible.builtin.apt:
+        name:  '{{ pihole_default_packages_debian }}'
+        state: 'latest'
+        update_cache: true
+  when: ansible_distribution == 'Debian'
+
+- name: 'dependencies | ubuntu'
+  block:
+    - name: 'dependencies | install ubuntu docker packages'
+      ansible.builtin.apt:
+        name:  '{{ pihole_default_packages_ubuntu_docker }}'
+        state: 'latest'
+        update_cache: true
+      when: pihole_docker
+
+    - name: 'dependencies | install ubuntu packages'
+      ansible.builtin.apt:
+        name:  '{{ pihole_default_packages_ubuntu }}'
+        state: 'latest'
+        update_cache: true
+  when: ansible_distribution == 'Ubuntu'
+
+- name: 'dependencies | redhat'
+  block:
+    - name: 'dependencies | install redhat docker packages'
+      ansible.builtin.apt:
+        name:  '{{ pihole_default_packages_redhat_docker }}'
+        state: 'latest'
+        update_cache: true
+      when: pihole_docker
+
+    - name: 'dependencies | install redhat packages'
+      ansible.builtin.dnf:
+        name:  '{{ pihole_default_packages_redhat }}'
+        state: 'latest'
+        update_cache: true
+  when: ansible_os_family == 'RedHat'

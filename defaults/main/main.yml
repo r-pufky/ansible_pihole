@@ -25,10 +25,16 @@ pihole_use_cli: false
 # via the GUI or CLI. Default: False.
 pihole_update_enable: false
 
-# Disable role behavior change warnings. Default: True.
-pihole_disable_warning: true
+# Disable role behavior change warnings. Default: False.
+# When potentially role-breaking changes have been made to the role and config
+# must be re-evaulated to apply the role safely. This will present a user
+# message that will pause the role and eventually timeout. The default value
+# will change on releases based on role changes.
+#
+# Setting this to True will skip this warning.
+pihole_disable_warning: false
 
-# Enable idempotent pihole operation. Default: False.
+# Enable idempotent pihole operation. Default: True.
 # The default behavior before this option existed is the equivalent of 'false'.
 #
 # Idempotent operation will:
@@ -42,7 +48,28 @@ pihole_disable_warning: true
 # may see 'skew' between what exists on the pihole server and what the role
 # defines. This corrects the issue at the expense of service downtime and
 # rebuilding.
-pihole_idempotent: false
+pihole_idempotent: true
+
+# Run Pihole in a Docker Environment. Default: False.
+# UNSUPPORTED. For integration testing only.
+#
+# Pihole detects the OS version running in the docker container and makes
+# installation decisions based on that, which means for systemd systems, it
+# tries to modify and bounce the systemd-resolved service, which essentially
+# means being forced to run the container with --privileged; installation hangs
+# with molecule and docker (exit 1) are caused by this service being unable to
+# be restarted within the container.
+#
+# The pihole docker container, which this role was created SPECIFICALLY to
+# avoid using, uses s6 instead of systemd during installation and configuration
+# to get around this issue.
+#
+# ALL docker-releated issues with this role are UNSUPPORTED.
+#
+# References:
+# * https://github.com/pi-hole/docker-pi-hole
+# * https://github.com/r-pufky/ansible_pihole/pull/21#issuecomment-1716822044
+pihole_docker: false
 
 ###############################################################################
 # Pi-Hole setupVars.conf

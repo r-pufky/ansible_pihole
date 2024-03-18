@@ -5,5 +5,5 @@
 
 # pihole restartdns restarts all required pihole services.
 # Reference: https://discourse.pi-hole.net/t/the-pihole-command-with-examples/738
-- name: 'Restart pihole dns'
+- name: 'restart pihole dns'
   ansible.builtin.command: '/etc/.pihole/automated\ install/basic-install.sh --reconfigure --unattended'
