@@ -28,7 +28,7 @@
     owner: 'root'
     group: 'root'
     mode:  '0644'
-  notify: 'restart pihole dns'
+  notify: 'Restart pihole dns'
 
 - name: 'Install | set binary location'
   ansible.builtin.stat:
@@ -48,17 +48,17 @@
   when: not pihole_installed
 
 - name: 'Install | install'
+  when: not pihole_installed
   block:
-    - name: 'Install | standard install'
+    - name: 'Install | standard install'  # noqa no-changed-when
       ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
       when: not pihole_docker
 
-    - name: 'Install | docker install'
+    - name: 'Install | docker install'  # noqa no-changed-when
       ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
       environment:
         DEBIAN_FRONTEND: noninteractive
       when: pihole_docker
-  when: not pihole_installed
 
 - name: 'Install | set FTL config'
   ansible.builtin.template:
@@ -67,7 +67,7 @@
     owner: 'pihole'
     group: 'root'
     mode: '0664' # installed permissions.
-  notify: 'restart pihole dns'
+  notify: 'Restart pihole dns'
 
 # Generate random password if no password is set.
 #
@@ -77,11 +77,11 @@
 # Reference:
 # * https://medium.com/@AbhijeetKasurde/ansible-generating-random-string-using-password-lookup-plugin-7cd3431a0d0
 # * https://discourse.pi-hole.net/t/what-is-setupvars-conf-and-how-do-i-use-it/3533/5
-- name: 'Install | set random password (no install password set)'
+- name: 'Install | set random password (no install password set)'  # noqa no-changed-when
   ansible.builtin.command: "pihole -a -p {{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
   when: pihole_webpassword|string|length == 0
 
-- name: 'Install | set password'
+- name: 'Install | set password'  # noqa no-changed-when
   ansible.builtin.command: 'pihole -a -p {{ pihole_webpassword }}'
   when: pihole_webpassword|string|length > 0
   no_log: true # password

@@ -35,7 +35,7 @@
   loop: '{{ pihole_domain_blocklists }}'
   when: not pihole_use_cli and pihole_domain_blocklists|length > 0
 
-- name: 'include | add_clients'
+- name: 'DB | include add_clients'
   ansible.builtin.include_tasks: add_clients.yml
   when: pihole_clients|length > 0
   loop: '{{ pihole_clients }}'

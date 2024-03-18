@@ -5,6 +5,7 @@
 # Manage dependency installation for all platforms and VM's.
 
 - name: 'Dependencies | debian'
+  when: ansible_distribution == 'Debian'
   block:
     - name: 'Dependencies | install debian docker packages'
       ansible.builtin.apt:
@@ -18,9 +19,8 @@
         name:  '{{ pihole_default_packages_debian }}'
         state: 'latest'
         update_cache: true
-  when: ansible_distribution == 'Debian'
-
 - name: 'Dependencies | ubuntu'
+  when: ansible_distribution == 'Ubuntu'
   block:
     - name: 'Dependencies | install ubuntu docker packages'
       ansible.builtin.apt:
@@ -34,9 +34,9 @@
         name:  '{{ pihole_default_packages_ubuntu }}'
         state: 'latest'
         update_cache: true
-  when: ansible_distribution == 'Ubuntu'
 
 - name: 'Dependencies | redhat'
+  when: ansible_os_family == 'RedHat'
   block:
     - name: 'Dependencies | install redhat docker packages'
       ansible.builtin.apt:
@@ -50,4 +50,3 @@
         name:  '{{ pihole_default_packages_redhat }}'
         state: 'latest'
         update_cache: true
-  when: ansible_os_family == 'RedHat'

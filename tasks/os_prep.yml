@@ -12,6 +12,7 @@
 # * https://github.com/r-pufky/ansible_pihole/issues/10
 
 - name: 'OS prep | config redhat'
+  when: ansible_os_family == 'RedHat'
   block:
     - name: 'RedHat Support is Best Effort!'
       ansible.builtin.debug:
@@ -70,9 +71,9 @@
         port:  '4711/tcp'
         permanent: true
         state: 'enabled'
-  when: ansible_os_family == 'RedHat'
 
 - name: 'OS prep | config ubuntu'
+  when: ansible_distribution == 'Ubuntu'
   block:
     - name: 'Ubuntu is Unsupported!'
       ansible.builtin.debug:
@@ -86,4 +87,3 @@
         echo:    false
         seconds: "{{ pihole_default_timeout }}"
       when: not pihole_disable_warning
-  when: ansible_os_family == 'Ubuntu'

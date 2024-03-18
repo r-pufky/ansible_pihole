@@ -28,7 +28,7 @@ pihole_default_packages_redhat:
 pihole_default_packages_debian_docker:
   - 'apt-utils'
 
-pihole_default_package_ubuntu_docker: "{{ pihole_default_packages_debian_docker }}"
+pihole_default_packages_ubuntu_docker: "{{ pihole_default_packages_debian_docker }}"
 
 pihole_default_packages_redhat_docker:
   - 'selinux-policy'
