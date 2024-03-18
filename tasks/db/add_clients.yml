@@ -16,11 +16,11 @@
 # Reference:
 # * https://docs.pi-hole.net/database/
 
-- name: 'db | add client {{ client.id }}'
+- name: 'DB | add client {{ client.id }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_client_insert }} ({{ client.id }}, \"{{ client.ip }}\", \"{{ client.comment }}\")"'
   become: true
 
-- name: 'db | remove client from default group - {{ client.id }}'
+- name: 'DB | remove client from default group - {{ client.id }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_client_groups_delete_default }} {{ client.id }}"'
   become: true
   when: |

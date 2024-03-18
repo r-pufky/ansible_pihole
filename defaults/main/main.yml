@@ -27,7 +27,7 @@ pihole_update_enable: false
 
 # Disable role behavior change warnings. Default: False.
 # When potentially role-breaking changes have been made to the role and config
-# must be re-evaulated to apply the role safely. This will present a user
+# must be re-evaluated to apply the role safely. This will present a user
 # message that will pause the role and eventually timeout. The default value
 # will change on releases based on role changes.
 #

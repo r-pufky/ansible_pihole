@@ -4,48 +4,48 @@
 ###############################################################################
 # Manage dependency installation for all platforms and VM's.
 
-- name: 'dependencies | debian'
+- name: 'Dependencies | debian'
   block:
-    - name: 'dependencies | install debian docker packages'
+    - name: 'Dependencies | install debian docker packages'
       ansible.builtin.apt:
         name:  '{{ pihole_default_packages_debian_docker }}'
         state: 'latest'
         update_cache: true
       when: pihole_docker
 
-    - name: 'dependencies | install debian packages'
+    - name: 'Dependencies | install debian packages'
       ansible.builtin.apt:
         name:  '{{ pihole_default_packages_debian }}'
         state: 'latest'
         update_cache: true
   when: ansible_distribution == 'Debian'
 
-- name: 'dependencies | ubuntu'
+- name: 'Dependencies | ubuntu'
   block:
-    - name: 'dependencies | install ubuntu docker packages'
+    - name: 'Dependencies | install ubuntu docker packages'
       ansible.builtin.apt:
         name:  '{{ pihole_default_packages_ubuntu_docker }}'
         state: 'latest'
         update_cache: true
       when: pihole_docker
 
-    - name: 'dependencies | install ubuntu packages'
+    - name: 'Dependencies | install ubuntu packages'
       ansible.builtin.apt:
         name:  '{{ pihole_default_packages_ubuntu }}'
         state: 'latest'
         update_cache: true
   when: ansible_distribution == 'Ubuntu'
 
-- name: 'dependencies | redhat'
+- name: 'Dependencies | redhat'
   block:
-    - name: 'dependencies | install redhat docker packages'
+    - name: 'Dependencies | install redhat docker packages'
       ansible.builtin.apt:
         name:  '{{ pihole_default_packages_redhat_docker }}'
         state: 'latest'
         update_cache: true
       when: pihole_docker
 
-    - name: 'dependencies | install redhat packages'
+    - name: 'Dependencies | install redhat packages'
       ansible.builtin.dnf:
         name:  '{{ pihole_default_packages_redhat }}'
         state: 'latest'

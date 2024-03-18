@@ -12,24 +12,24 @@
 # Reference:
 # * https://docs.pi-hole.net/database/
 
-- name: 'include | clear_databases'
+- name: 'DB | include clear_databases'
   ansible.builtin.include_tasks: clear_databases.yml
   when: pihole_idempotent
 
-- name: 'db | add adlist source'
+- name: 'DB | add adlist source'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_ad_insert }} ({{ item.id }}, \"{{ item.address }}\", {{ item.enabled | int }}, \"{{ item.comment }}\")"'
   become: true
   loop: '{{ pihole_ad_sources }}'
   when: pihole_ad_sources|length > 0
 
-- name: 'db | defer to cli for domain blocklist management'
+- name: 'DB | defer to cli for domain blocklist management'
   ansible.builtin.include_tasks: cli.yml
   loop: '{{ pihole_domain_blocklists }}'
   loop_control:
     loop_var: domain
   when: pihole_use_cli and pihole_domain_blocklists|length > 0
 
-- name: 'db | add domain blocklist'
+- name: 'DB | add domain blocklist'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_domain_insert }} ({{ item.id }}, {{ item.type }}, \"{{ item.domain }}\", {{ item.enabled | int }}, \"{{ item.comment }}\")"'
   become: true
   loop: '{{ pihole_domain_blocklists }}'
@@ -42,31 +42,31 @@
   loop_control:
     loop_var: client
 
-- name: 'db | add groups'
+- name: 'DB | add groups'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_groups_insert }} ({{ item.id }}, {{ item.enabled | int }}, \"{{ item.name }}\", \"{{ item.description }}\")"'
   become: true
   loop: '{{ pihole_groups }}'
   when: pihole_groups|length > 0
 
-- name: 'db | add groups ad blocklist'
+- name: 'DB | add groups ad blocklist'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_ad_groups_insert }} ({{ item.adlist_id }}, {{ item.group_id }})"'
   become: true
   loop: '{{ pihole_ad_groups_blocklist }}'
   when: pihole_ad_groups_blocklist|length > 0
 
-- name: 'db | add groups client blocklist'
+- name: 'DB | add groups client blocklist'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_client_groups_insert }} ({{ item.client_id }}, {{ item.group_id }})"'
   become: true
   loop: '{{ pihole_client_groups_blocklist }}'
   when: pihole_client_groups_blocklist|length > 0
 
-- name: 'db | add groups domain blocklist'
+- name: 'DB | add groups domain blocklist'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_sqlite3 }} "{{ pihole_default_domain_groups_insert }} ({{ item.domainlist_id }}, {{ item.group_id }})"'
   become: true
   loop: '{{ pihole_domain_groups_blocklist }}'
   when: pihole_domain_groups_blocklist|length > 0
 
-- name: 'db | update gravity adlists'
+- name: 'DB | update gravity adlists'  # noqa no-changed-when
   ansible.builtin.command: 'pihole -g'
   when: >
     not pihole_installed or

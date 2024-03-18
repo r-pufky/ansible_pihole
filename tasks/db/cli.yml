@@ -24,27 +24,27 @@
 # * https://docs.pi-hole.net/guides/misc/whitelist-blacklist/
 # * https://docs.pi-hole.net/core/pihole-command/#whitelisting-blacklisting-and-regex
 
-- name: 'cli | check {{ domain.domain }}'
+- name: 'DB CLI | check {{ domain.domain }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_binary }} -q -exact "{{ domain.domain }}"'
   changed_when: false
   become: true
   register: _pihole_cli_domain_exact_check
 
-- name: 'cli | remove from whitelist - {{ domain.domain }}'
+- name: 'DB CLI | remove from whitelist - {{ domain.domain }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_binary }} -w -d "{{ domain.domain }}"'
   become: true
   when:
     ('whitelist' in _pihole_cli_domain_exact_check.stdout) and
     not domain.enabled
 
-- name: 'cli | remove from blacklist - {{ domain.domain }}'
+- name: 'DB CLI | remove from blacklist - {{ domain.domain }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_binary }} -b -d "{{ domain.domain }}"'
   become: true
   when:
     ('blacklist' in _pihole_cli_domain_exact_check.stdout) and
     not domain.enabled
 
-- name: 'cli | add to whitelist - {{ domain.domain }}'
+- name: 'DB CLI | add to whitelist - {{ domain.domain }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_binary }} -w "{{ domain.domain }}" --comment "{{ domain.comment }}"'
   become: true
   when:
@@ -53,7 +53,7 @@
     (domain.type == 0 or domain.type == 2) and
     domain.enabled
 
-- name: 'cli | add to blacklist - {{ domain.domain }}'
+- name: 'DB CLI | add to blacklist - {{ domain.domain }}'  # noqa no-changed-when
   ansible.builtin.command: '{{ pihole_default_binary }} -b "{{ domain.domain }}" --comment "{{ domain.comment }}"'
   become: true
   when:
