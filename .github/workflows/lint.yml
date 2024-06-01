@@ -61,7 +61,7 @@ jobs:
         if: ${{ always() }}
       - name: Run Checkov action
         id: checkov
-        uses: bridgecrewio/checkov-action@e5aec874aca04a0b30142382f0980e5145252333
+        uses: bridgecrewio/checkov-action@329e2bb9c8d047eaa4216c2e815c6957cbf97e59
         with:
           directory: ${{ env.ANSIBLE_ROLE }}
           soft_fail: true
