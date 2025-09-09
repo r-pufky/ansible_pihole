@@ -1,3 +1,20 @@
+:warning:
+
+Migration to ansible 2.18.x in progress. There will be substantial changes to
+the role comply with new Galaxy and Collection requirements.
+
+[3.x](https://github.com/r-pufky/ansible_pihole/tree/3.x) is the last version
+pre ansible 2.18. Anyone wishing to use the old version and supported platforms
+should use this branch. **3.x** will **no longer** be actively maintained.
+
+* Open issues will be addressed during migration or resolved if no longer
+  relevant.
+* Experimentally supported OS's will be removed due to lack of contributions.
+* Testing standardized with implementations used across all other existing
+  roles/collections.
+* Documentation standardized and updated.
+* Jump to latest PiHole version.
+
 # Pi-Hole
 Pi-Hole installation from public release.
 
