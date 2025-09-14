@@ -1,0 +1,218 @@
+---
+# yamllint disable rule:line-length
+###############################################################################
+# Assert
+###############################################################################
+# Sanity check options to stop preventable errors.
+
+- name: 'Annotate | DEPRECATED VARIABLES IN USE ⚠'
+  when: >
+    pihole_pihole_interface is defined or
+    pihole_pihole_dns_1 is defined
+  ansible.builtin.fail:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                   DEPRECATED VARIABLES IN USE.                    │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Role variables have migrated. Read defaults and update.
+
+- name: 'Prep | check pihole_cfg_dns_host_record'
+  when: pihole_cfg_dns_host_record | length > 0
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                        Legacy option used.                        │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Use pihole_cfg_dns_hosts.
+      │
+      │ pihole_cfg_dns_host_record superseded by pihole_cfg_dns_hosts.
+      │ Required continued use of this option likely requires a bug report
+      │ to address use case.
+      │
+      │ pihole_cfg_dns_host_record: {{ pihole_cfg_dns_host_record }}
+      │
+      │ https://discourse.pi-hole.net/t/local-dns-records/74898
+
+- name: 'Prep | assert host force4 requirements'
+  when: pihole_cfg_dns_host_force4
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_dns_host_ipv4 | length > 0
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │          Requirements not met: pihole_cfg_dns_host_ipv4           │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Both options are required if enabled.
+      │
+      │ pihole_cfg_dns_host_force4: {{ pihole_cfg_dns_host_force4 }}
+      │ pihole_cfg_dns_host_ipv4: {{ pihole_cfg_dns_host_ipv4 }}
+
+- name: 'Prep | assert host force6 requirements'
+  when: pihole_cfg_dns_host_force6
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_dns_host_ipv6 | length > 0
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │         Requirements not met: pihole_cfg_dns_host_force6          │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Both options are required if enabled.
+      │
+      │ pihole_cfg_dns_host_force6: {{ pihole_cfg_dns_host_force6 }}
+      │ pihole_cfg_dns_host_ipv6: {{ pihole_cfg_dns_host_ipv6 }}
+
+- name: 'Prep | assert blocking force4 requirements'
+  when: pihole_cfg_dns_blocking_force4
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_dns_blocking_ipv4 | length > 0
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │       Requirements not met: pihole_cfg_dns_blocking_force4        │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Both options are required if enabled.
+      │
+      │ pihole_cfg_dns_blocking_force4: {{ pihole_cfg_dns_blocking_force4 }}
+      │ pihole_cfg_dns_blocking_ipv4: {{ pihole_cfg_dns_blocking_ipv4 }}
+
+- name: 'Prep | assert blocking force6 requirements'
+  when: pihole_cfg_dns_blocking_force6
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_dns_blocking_ipv6 | length > 0
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │       Requirements not met: pihole_cfg_dns_blocking_force6        │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Both options are required if enabled.
+      │
+      │ pihole_cfg_dns_blocking_force6: {{ pihole_cfg_dns_blocking_force6 }}
+      │ pihole_cfg_dns_blocking_ipv6: {{ pihole_cfg_dns_blocking_ipv6 }}
+
+- name: 'Prep | assert password requirements'
+  when: not pihole_srv_balloon_enable
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_webserver_api_pwhash.startswith('$BALLOON-SHA256')
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │     Balloon hashing must be enabled for plaintext passwords.      │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Plain passwords require balloon generator installation.
+      │
+      │ pihole_srv_balloon_enable: {{ pihole_srv_balloon_enable }}
+      │ pihole_cfg_webserver_api_pwhash: {{ pihole_cfg_webserver_api_pwhash }}
+
+- name: 'Prep | assert TOTP secret requirements'
+  when: pihole_cfg_webserver_api_totp_secret | length > 0
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - pihole_cfg_webserver_api_totp_secret | length in [20, 32]
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │             TOTP secret must be 20 or 32 characters.              │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ See pihole_cfg_webserver_api_totp_secret.
+      │
+      │ Length: {{ pihole_cfg_webserver_api_totp_secret | length }}
+
+- name: 'Prep | assert TOTP secret requirements'
+  when: pihole_cfg_webserver_api_app_pwhash | length > 0
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - pihole_cfg_webserver_api_totp_secret | length > 0
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │            Application passwords require TOTP secret.             │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ See pihole_cfg_webserver_api_totp_secret.
+
+- name: 'Prep | assert password requirements'
+  when: not pihole_srv_balloon_enable
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_webserver_api_pwhash.startswith('$BALLOON-SHA256')
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │   Balloon hashing must be enabled for plaintext app passwords.    │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Plain app passwords require balloon generator installation.
+      │
+      │ pihole_srv_balloon_enable: {{ pihole_srv_balloon_enable }}
+      │ pihole_cfg_webserver_api_app_pwhash: {{ pihole_cfg_webserver_api_app_pwhash }}
+
+- name: 'Prep | assert extra logging requirements'
+  when: pihole_cfg_misc_extra_logging
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_dns_query_logging
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │        Requirements not met: pihole_cfg_misc_extra_logging        │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Both options are required if enabled.
+      │
+      │ pihole_cfg_misc_extra_logging: {{ pihole_cfg_misc_extra_logging }}
+      │ pihole_cfg_dns_query_logging: {{ pihole_cfg_dns_query_logging }}
+
+- name: 'Prep | assert debug flag requirements'
+  when: pihole_cfg_debug_flags
+  ansible.builtin.assert:
+    quiet: true
+    that: pihole_cfg_debug_queries
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │           Requirements not met: pihole_cfg_debug_flags            │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Both options are required if enabled.
+      │
+      │ pihole_cfg_debug_flags: {{ pihole_cfg_debug_flags }}
+      │ pihole_cfg_debug_queries: {{ pihole_cfg_debug_queries }}
+
+- name: 'Prep | assert REST API requirements'
+  when: pihole_srv_api_config_enable
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - pihole_srv_api | length > 0
+      - pihole_cfg_webserver_api_pwhash | length > 0 or
+        pihole_cfg_webserver_api_app_pwhash | length > 0
+      - pihole_cfg_webserver_api_totp_secret | length > 0
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                  Requirements not met: REST API                   │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ REST API requires API, TOTP, and either password set:
+      │
+      │ pihole_srv_api: {{ pihole_srv_api }}
+      │ pihole_cfg_webserver_api_pwhash: {{ pihole_cfg_webserver_api_pwhash }}
+      │ pihole_cfg_webserver_api_app_pwhash: {{ pihole_cfg_webserver_api_app_pwhash }}
+      │ pihole_cfg_webserver_api_totp_secret: {{ pihole_cfg_webserver_api_totp_secret }}

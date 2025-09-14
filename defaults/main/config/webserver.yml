@@ -1,0 +1,457 @@
+---
+###############################################################################
+# Webserver (webserver)
+###############################################################################
+
+# Domain web interface served on. Default: 'pi.hole'.
+pihole_cfg_webserver_domain: 'pi.hole'
+
+# Webserver access control list (ACL).
+#
+# Last match wins. Empty list allows all connections.
+#
+# Values:
+#   -{CIDR}: Deny network range (IPv4/6).
+#   +{CIDR}: Allow network range (IPv4/6).
+#     -{IP}: Deny IP (IPv4/6).
+#     +{IP}: Allow IP (IPv4/6).
+#
+# pihole_cfg_webserver_acl:
+#   - '+127.0.0.1'
+#   - '+[::1]''
+#   - '+192.168.0.0/16'
+#
+# Default: [] ().
+pihole_cfg_webserver_acl: []
+
+# Webserver ports.
+#
+# Port Format Options: ^<+>[{IP}][:{PORT}]<o,r,s>
+#    +: Create one socket for specified port on IPv4 and IPv6. Requires no
+#       network interface specified. Alternatively, explicitly set both:
+#       +80 → 80,[::]:80.
+#    s: Encrypt traffic - required for TLS/SSL ports to serve HTTPS.
+#       80,443s → HTTP port 80, HTTPS port 443.
+#    r: Redirect non-encrypted ports to first defined encrypted port (s).
+#       80r,443s → redirect HTTP port 80 to HTTPS 443.
+#    o: Optional - inability to use this port is not considered an error.
+#    *: All options may be combined per port to defined complex rules:
+#       80or,443os,8080,4443s → (HTTP port 80 redirects to SSL if available,
+#       443 encrypted if available, 8080 mandatory and unencrypted, 4443
+#       mandatory and encrypted).
+#
+# Values:
+#   ^<+>[{IP}][:{PORT}]<o,r,s>: Port Format.
+#                           []: Disable webserver.
+#
+# pihole_cfg_webserver_port:
+#   - '+80'  # One socket for port 80 both IPv4/6.
+#   - '8080r'  # Redirect port 8080 to first encrypted.
+#   - '127.0.0.1:443s'  # TLS/SSL HTTPS on localhost IPv4.
+#   - '[::1]:443os'  # Optional TLS/SSL HTTPS on localhost IPv6.
+#
+# Default:
+#   - '80o'
+#   - '443os'
+#   - '[::]:80o'
+#   - '[::]:443os'
+pihole_cfg_webserver_port:
+  - '80o'
+  - '443os'
+  - '[::]:80o'
+  - '[::]:443os'
+
+# Maximum number of worker threads allowed.
+#
+# Effectively the number of concurrent HTTP connections as each incoming
+# webserver connection is handled in a separate thread. Any other connections
+# are queued until they can be processed by a unoccupied thread.
+#
+# Threads are only created when needed due to incoming connections.
+#
+# Values:
+#   0: Default civetweb threads (50).
+#
+# Default: 50.
+pihole_cfg_webserver_threads: 50
+
+# Additional HTTP headers added to web server responses.
+#
+# Headers are added to all responses, including API.
+#
+# pihole_cfg_webserver_headers:
+#     list of dict - Addition response header definitions.
+#   - header: str - HTTP header.
+#     value: str - Header value.
+#     comment: str - Comment. Optional.
+#
+# Default:
+#   - header: 'X-DNS-Prefetch-Control'
+#     value: 'off'
+#     comment: |
+#       PiHole - Usually browsers proactively perform domain name resolution on
+#       links that the user may choose to follow. We disable DNS prefetching
+#       here.
+#   - header: 'Content-Security-Policy'
+#     value: "default-src 'self' 'unsafe-inline';"
+#     comment: |
+#       PiHole - Required by Chart.js styling some elements directly, and
+#       index.html containing some inlined Javascript code.
+#   - header: 'X-Frame-Options'
+#     value: 'DENY'
+#     comment: |
+#       PiHole - Page can not be displayed in a frame, regardless of the site
+#       attempting to do so.
+#   - header: 'X-XSS-Protection'
+#     value: '0'
+#     comment: |
+#       PiHole - Disable XSS filtering in browsers that support it. This header
+#       is usually enabled by default in browsers, and is not recommended as it
+#       can hurt the security of the site. See Reference.
+#   - header: 'X-Content-Type-Options'
+#     value: 'nosniff'
+#     comment: |
+#       PiHole - Marker used by server to indicate that MIME types advertised
+#       in Content-Type headers should not be changed and be followed. This
+#       allows to opt-out of MIME type sniffing. Site security testers usually
+#       expect this header to be set.
+#   - header: 'Referrer-Policy'
+#     value: 'strict-origin-when-cross-origin'
+#     comment: |
+#       PiHole - Referrer will be sent for same-site origins, but cross-origin
+#       requests will send no referrer information.
+#
+# Reference:
+# * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+# * https://securityheaders.io
+pihole_cfg_webserver_headers:
+  - header: 'X-DNS-Prefetch-Control'
+    value: 'off'
+  - header: 'Content-Security-Policy'
+    value: "default-src 'self' 'unsafe-inline';"
+  - header: 'X-Frame-Options'
+    value: 'DENY'
+  - header: 'X-XSS-Protection'
+    value: '0'
+  - header: 'X-Content-Type-Options'
+    value: 'nosniff'
+  - header: 'Referrer-Policy'
+    value: 'strict-origin-when-cross-origin'
+
+# Serve all files in webserver.paths.webroot?
+#
+# Only files in webserver.paths.webhome and /api are served if disabled.
+#
+# Default: False.
+pihole_cfg_webserver_serve_all: false
+
+###############################################################################
+# Webserver Sessions (webserver.session)
+###############################################################################
+
+# Session timeout (seconds).
+#
+# Sessions are continuously refreshed by web interface, preventing timeout
+# while web interface is open.
+#
+# Default: 1800 (30 minutes).
+pihole_cfg_webserver_session_timeout: 1800
+
+# Enable backup and restoring sessions from database?
+#
+# Keep sessions after a restart of web interface.
+#
+# Default: True.
+pihole_cfg_webserver_session_restore: true
+
+###############################################################################
+# Webserver TLS (webserver.tls)
+###############################################################################
+
+# Webserver TLS certificate.
+#
+# Values:
+#       '': Use currently installed certificate (/etc/pihole/tls.pem).
+#   {CERT}: Use PEM format certificate sourced from ansible controller. It must
+#           contain both private key 'RSA PRIVATE KEY' and certificate
+#           'CERTIFICATE' sections:
+#
+#             cp tls.crt tls.pem && cat tls.key >> tls.pem
+#
+# pihole_cfg_webserver_tls_cert: 'host_vars/pihole.example.com/data/tls.pem'
+#
+# Default: '' (use installed certificate).
+pihole_cfg_webserver_tls_cert: ''
+
+###############################################################################
+# Webserver Paths (webserver.paths)
+###############################################################################
+
+# Webserver root. Default: '/var/www/html'.
+pihole_cfg_webserver_paths_webroot: '/var/www/html'
+
+# Web interface root sub-directory. Default: '/admin/'.
+pihole_cfg_webserver_paths_webhome: '/admin/'
+
+# Web interface prefix.
+#
+# Used for certain reverse proxy configurations.
+#
+# Values:
+#   /{PREFIX}: Prefix.
+#          '': Disabled. No proxy. (default).
+#
+# http://<ip>/pihole/admin/ → http://<ip>/admin/:
+#   pihole_cfg_webserver_paths_prefix: '/pihole'
+#
+# Default: '' (disabled).
+pihole_cfg_webserver_paths_prefix: ''
+
+###############################################################################
+# Webserver Interface (webserver.interface)
+###############################################################################
+
+# Use boxed layout? Default: True.
+pihole_cfg_webserver_interface_boxed: true
+
+# Theme.
+#
+# Values:
+#         default-auto: PiHole auto (default).
+#        default-light: PiHole day.
+#         default-dark: PiHole midnight.
+#       default-darker: PiHole deep-midnight.
+#        high-contrast: High-contrast light.
+#   high-contrast-dark: High-contrast dark.
+#                lcars: Star Trek LCARS.
+#
+# Default: 'default-auto'.
+pihole_cfg_webserver_interface_theme: 'default-auto'
+
+###############################################################################
+# Webserver API (webserver.api)
+###############################################################################
+# Rely on PiHole to generate BALLOON-SHA256 passwords. This is a fairly new
+# password hashing algorithm that has support
+
+# Concurrent sessions allowed for API.
+#
+# New sessions will not be allowed until number of sessions drops due to
+# session expiration or logout.
+#
+# Default: 16.
+pihole_cfg_webserver_api_max_sessions: 16
+
+# Enable prettfied (human-readable) JSON API output? Default: False.
+pihole_cfg_webserver_api_pretty_json: false
+
+# Webserver password.
+#
+# Special Case:
+# * pihole_srv_balloon_enable=true will automatically generate a BALLOON-SHA256
+#   hash from provided password.
+#
+# Values:
+#   {PASS}: Password. BALLOON-SHA256 hash automatically generated. Recommended.
+#           Requires pihole_srv_balloon_enable=true.
+#   {HASH}: Requires '!unsafe'. BALLOON-SHA256 password hash from 'api_pwhash'.
+#           PiHole uses BALLOON-SHA256 password hashing:
+#           * 128bit salt.
+#           * Version (v) 1.
+#           * Space cost (s) 1024.
+#           * Time cost (t) 32.
+#
+#           pihole_cfg_webserver_api_pwhash: !unsafe '$BALLOON-SHA256...'
+#
+# Default: '{RANDOM}' (randomly generated).
+#
+# Reference
+# * https://en.wikipedia.org/wiki/Balloon_hashing
+# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c
+pihole_cfg_webserver_api_pwhash: '{{
+    lookup("ansible.builtin.password",
+           "/dev/null",
+           chars=["ascii_lowercase", "ascii_uppercase", "digits"],
+           length=32)
+  }}'
+
+# PiHole 2FA TOTP secret.
+#
+# 2FA required for pihole_cfg_webserver_api_app_pwhash.
+#
+# Values:
+#     {HASH}: Enable 2FA using TOTP hash (32 characters Base32 Encoded). This
+#             is the authenticator TOTP source. Generate manually with:
+#
+#               head /dev/urandom | head -c 20 | base64 | base32 | cut -c 1-32
+#
+#             Allows for idempotent TOTP auth use. Recommended.
+#     {SEED}: Enable 2FA using TOTP seed (20 characters Bytes/ASCII). Converted
+#             to TOTP hash automatically (above). Resulting hash must be setup
+#             using QR/hash codes generated during role execution or you will
+#             not be able to login. Not Recommended.
+#         '': Disable 2FA (default).
+#
+# Default: '' (disabled).
+pihole_cfg_webserver_api_totp_secret: ''
+
+# Application password hash.
+#
+# Requires pihole_cfg_webserver_api_totp_secret set.
+#
+# An app password is randomly generated password that can be used instead of
+# regular password + TOTP token when signing in; for services that don't
+# support two-step verification.
+#
+# Special Case:
+# * pihole_srv_balloon_enable=true will automatically generate a BALLOON-SHA256
+#   hash from provided password.
+# * API calls will prompt for 2FA token if needed when no application password
+#   is set.
+# * PiHole creates a 44 character app password - this is not a hard limit.
+#
+# Values:
+#   {PASS}: Password. BALLOON-SHA256 hash automatically generated. Recommended.
+#           Requires pihole_srv_balloon_enable=true.
+#   {HASH}: Requires '!unsafe'. BALLOON-SHA256 password hash from
+#           'api_app_pwhash'.
+#
+#             Settings → Web interface / API → Expert
+#               Advanced Settings → Configure app password
+#
+#             * pihole_srv_app_pass: generated password in UI.
+#             * pihole_cfg_webserver_api_app_pwhash: pihole.toml - app_pwhash.
+#
+#           PiHole uses BALLOON-SHA256 password hashing:
+#           * 128bit salt.
+#           * Version (v) 1.
+#           * Space cost (s) 1024.
+#           * Time cost (t) 32.
+#
+#           pihole_cfg_webserver_api_app_pwhash: !unsafe '$BALLOON-SHA256...'
+#
+# Default: '{RANDOM}' (randomly generated).
+#
+# Reference
+# * https://en.wikipedia.org/wiki/Balloon_hashing
+# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c
+pihole_cfg_webserver_api_app_pwhash: '{{
+    lookup("ansible.builtin.password",
+           "/dev/null",
+           chars=["ascii_lowercase", "ascii_uppercase", "digits"],
+           length=44)
+  }}'
+
+# Allow API application password sessions to modify config?
+#
+# Only enable if applications using application password are trusted and really
+# needed.
+#
+# Default: False.
+pihole_cfg_webserver_api_app_sudo: false
+
+# Create temporary CLI password?
+#
+# Security:
+#   Password stored in the clear in /etc/pihole/cli_pw and can be used by CLI
+#   (pihole ...  commands) to authenticate against API. Note that password is
+#   only valid for current session and regenerated on each FTL restart.
+#   Sessions initiated with this password cannot modify PiHole configuration
+#   (change passwords, etc.) for security reasons but can still use API to
+#   query data and manage lists.
+#
+# Default: True.
+pihole_cfg_webserver_api_cli_pw: true
+
+# Exclude clients from certain API responses?
+#
+# Exclusions:
+# * /api/queries - Query Log
+# * /api/stats/top_clients - Top Clients
+#
+# Special Case:
+#   {REGEX}: Regular expressions may be used. Double escape backslashes (\\).
+#            Use '!unsafe'.
+#
+# Values:
+#         {IP}: IPv4/IPv6 address to exclude.
+#   {HOSTNAME}: Hostname to exclude.
+#
+# pihole_cfg_webserver_api_exclude_clients: !unsafe
+#   - '^192\\.168\\.2\\.56$'
+#   - '^fe80::341:[0-9a-f]*$'
+#   - '^localhost$'
+#
+# Default: [] (no exclusions).
+pihole_cfg_webserver_api_exclude_clients: !unsafe []
+
+# Exclude domains from certain API responses?
+#
+# Exclusions:
+# * /api/queries - Query Log
+# * /api/stats/top_domains - Top Domains
+#
+# Special Case:
+#   {REGEX}: Regular expressions may be used. Double escape backslashes (\\).
+#            Use '!unsafe'.
+#
+# Values:
+#         {IP}: IPv4/IPv6 address to exclude.
+#   {HOSTNAME}: Hostname to exclude.
+#
+# pihole_cfg_webserver_api_exclude_clients: !unsafe
+#   - '(^|\\.)\\.google\\.de$'
+#   - '\\.pi-hole\\.net$'
+#
+# Default: [] (no exclusions).
+pihole_cfg_webserver_api_exclude_domains: []
+
+# Amount of history to return from database by API (seconds).
+#
+# Special Case:
+#   86400: Max amount of history (24 hours).
+#
+# Default: 86400 (24 hours).
+pihole_cfg_webserver_api_max_history: 86400
+
+# Number of clients returned by Activity graph (/api/history/clients).
+#
+# Values:
+#   0: Return all clients.
+#   #: No limit specified; however large numbers negatively affect GUI.
+#
+# Default: 10.
+pihole_cfg_webserver_api_max_clients: 10
+
+# Active client computation.
+#
+# Values:
+#    True: Return clients with most queries globally (within 24 hours).
+#   False: Return clients with most queries per time slot individually.
+#
+# Default: True.
+pihole_cfg_webserver_api_client_history_global_max: true
+
+# Enable destructive API calls?
+#
+# Calls that interrupt services: 'restart DNS server', 'flush logs', etc.
+#
+# Default: True.
+pihole_cfg_webserver_api_allow_destructive: true
+
+###############################################################################
+# Webserver API Temp (webserver.api.temp)
+###############################################################################
+
+# Upper temperature limit to report 'hot'. Default: 60.000000.
+pihole_cfg_webserver_api_temp_limit: 60.000000
+
+# Temperature unit to use for pihole_cfg_webserver_api_temp_limit.
+#
+# Values:
+#   C: Celsius (default).
+#   F: Fahrenheit.
+#   K: Kelvin.
+#
+# Default: 'C'.
+pihole_cfg_webserver_api_temp_unit: 'C'

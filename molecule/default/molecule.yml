@@ -1,24 +1,129 @@
 ---
+###############################################################################
+# Default
+###############################################################################
+# Default (and unset options with configurations) start service correctly, with
+# REST API login validated.
+#
+# Tests:
+# * All default options (unset defaults set with options) set.
+# * /etc/pihole/pihole.toml.broken does NOT exist.
+# * Raw web password works with balloon hashing.
+# * Raw app password works with balloon hashing.
+
 dependency:
-  name: galaxy
-  enabled: false
+  name: 'galaxy'
 driver:
-  name: docker
-platforms:
-  - name: instance
-    image: nmusatti/${MOLECULE_DISTRO:-ubuntu2004}-pys-systemd
-    # env:
-    #   http_proxy: ${http_proxy}
-    #   https_proxy: ${https_proxy}
-    #   no_proxy: ${no_proxy}
-    groups:
-      - pihole_group
+  name: 'podman'
 provisioner:
-  name: ansible
+  name: 'ansible'
   config_options:
     defaults:
-      verbosity: 2
-scenario:
-  name: default
+      interpreter_python: 'auto_silent'
+      callback_whitelist: 'profile_tasks, timer, yaml'
+    ssh_connection:
+      pipelining: false
+  inventory:
+    group_vars:
+      all:
+        pihole_cfg_dhcp_start: '172.16.0.10'
+        pihole_cfg_dhcp_end: '172.16.0.250'
+        pihole_cfg_dhcp_router: '172.16.0.1'
+        pihole_cfg_dhcp_netmask: '255.240.0.0'
+        pihole_cfg_dhcp_lease_time: '1w'
+        pihole_cfg_dhcp_hosts:
+          - comment: 'laptop with wired/wireless'
+            hwaddr:
+              - '00:11:22:AA:BB:CC'
+              - '00:11:22:AA:BB:DD'
+            ip: '172.16.0.15'
+            hostname: 'lappy'
+            lease: '3600'
+          - comment: 'Desktop'
+            hwaddr: '00:11:22:AA:BB:EE'
+            set:
+              - 'vlan20'
+              - 'desktop'
+            ip:
+              - '172.16.0.20'
+              - '[::56]'
+              - '[1234:80/126]'
+            hostname: 'desky'
+            lease: 'infinite'
+          - comment: 'router'
+            ip: '172.16.0.1'
+            hwaddr: '00:11:22:AA:BB:FF'
+            ignore: true
+        pihole_cfg_dhcp_ntp_ipv4_address: '0.0.0.0'
+        pihole_cfg_dhcp_ntp_ipv6_address: '::'
+        pihole_cfg_dns_hosts:
+          - ip: '127.0.0.1'
+            host: 'mylocal'
+          - ip: '172.16.0.1'
+            host: 'router'
+        pihole_cfg_dns_cname_records:
+          - cname: 'friendly-name'
+            target: 'router'
+            ttl: 86400
+          - cname: 'friendly-alt-name'
+            target: 'router'
+        pihole_cfg_dns_rev_servers:
+          - enabled: true
+            ip: '172.16.0.0/12'
+            server: '172.16.0.1'
+            domain: 'example.com'
+        pihole_cfg_dns_host_record:
+          name: 'test-server'
+          ipv4: '172.16.0.253'
+          ipv6: '::ffff:172.16.0.253'
+          ttl: 86400
+        pihole_cfg_dns_host_ipv4: '172.16.0.1'
+        pihole_cfg_dns_host_ipv6: '172.16.0.1'
+        pihole_cfg_dns_blocking_ipv4: '172.16.0.1'
+        pihole_cfg_dns_blocking_ipv6: '172.16.0.1'
+        pihole_cfg_files_pcap: '/tmp/pihole.pcap'
+        pihole_cfg_misc_dnsmasq_lines:
+          - 'dhcp-option=vendor:MSFT,2,1i'
+        pihole_cfg_webserver_api_exclude_clients:
+          - '^10\.0\.0\.1'
+        pihole_cfg_webserver_api_exclude_domains:
+          - '\.pihole\.net'
+        pihole_cfg_webserver_api_pwhash: 'test'
+        pihole_cfg_webserver_api_totp_secret:
+          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
+        pihole_cfg_webserver_api_app_pwhash: 'test2'
+        pihole_cfg_debug_api: true  # /var/log/pihole/FTL.log
+        pihole_srv_api_config_enable: false
+platforms:
+  - name: 'pihole-debian-13-default'
+    image: 'ghcr.io/hifis-net/debian-systemd:13'
+    systemd: 'always'
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    command: '/lib/systemd/systemd'
+    pre_build_image: true
+    published_ports:
+      - '1080:80/tcp'
+      - '1443:443/tcp'
+      - '8080:8080/tcp'
+      - '8443:8443/tcp'
 verifier:
-  name: ansible
+  name: 'ansible'
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+scenario:
+  test_sequence:
+    # - 'dependency'
+    # - 'cleanup'
+    - 'destroy'
+    - 'syntax'
+    - 'create'
+    - 'prepare'
+    - 'converge'
+    # - 'idempotence'  # services always restarted.
+    # - 'side_effect'
+    - 'verify'
+    # - 'cleanup'
+    - 'destroy'

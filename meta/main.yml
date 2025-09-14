@@ -1,27 +1,23 @@
 ---
 galaxy_info:
-  role_name:   'pihole'
-  author:      'r_pufky'
-  description: 'Pi-Hole'
-  company:     'N/A'
-  license:     'AGPL-3.0 License'
-  min_ansible_version: '2.11'
+  role_name: 'pihole'
+  author: 'r_pufky'
+  description: 'PiHole Server'
+  company: 'N/A'
+  license: 'AGPL-3.0 License'
+  min_ansible_version: '2.18.0'
 
   platforms:
     - name: 'Debian'
       versions:
-        - 'buster'
-        - 'bullseye'
-        - 'bookworm'
-    - name: 'EL'
-      versions:
-        - 'all'
-    - name: 'Fedora'
-      versions:
-        - 'all'
+        - 'trixie'
 
   galaxy_tags:
     - 'pihole'
     - 'dns'
+    - 'dhcp'
+    - 'ntp'
+    - 'adblock'
+    - 'blackhole'
 
 dependencies: []

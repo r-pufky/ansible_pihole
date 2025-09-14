@@ -1,0 +1,13 @@
+---
+- name: 'Verify | assert failures'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | PASS ✔'
+      ansible.builtin.debug:
+        msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                   Tests PASSED during converge.                   │
+          │                                                                   │
+          ╰───────────────────────────────────────────────────────────────────╯

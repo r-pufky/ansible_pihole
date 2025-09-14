@@ -1,0 +1,252 @@
+---
+###############################################################################
+# Debug (debug)
+###############################################################################
+
+# Enable database debugging?
+#
+# Print debugging information about database actions. This prints performed SQL
+# statements as well as some general information such as the time it took to
+# store the queries and how many have been saved to the database.
+#
+# Default: False.
+pihole_cfg_debug_database: false
+
+# Enable networking debugging?
+#
+# Prints a list of the detected interfaces on the startup of pihole-FTL. Also,
+# prints whether these interfaces are IPv4 or IPv6 interfaces.
+#
+# Default: False.
+pihole_cfg_debug_networking: false
+
+# Enable locks debugging?
+#
+# Print information about shared memory locks. Messages will be generated when
+# waiting, obtaining, and releasing a lock.
+#
+# Default: False.
+pihole_cfg_debug_locks: false
+
+# Enable queries debugging?
+#
+# Print extensive query information (domains, types, replies, etc.). This has
+# always been part of the legacy debug mode of pihole-FTL.
+#
+# Default: False.
+pihole_cfg_debug_queries: false
+
+# Enable flags debugging?
+#
+# Requires pihole_cfg_debug_queries=True.
+#
+# Print flags of queries received by the DNS hooks.
+#
+# Default: False.
+pihole_cfg_debug_flags: false
+
+# Enable shmem debugging?
+#
+# Print information about shared memory buffers. Messages are either about
+# creating or enlarging shmem objects or string injections.
+#
+# Default: False.
+pihole_cfg_debug_shmem: false
+
+# Enable garbage collection debugging?
+#
+# Print information about garbage collection (GC): What is to be removed, how
+# many have been removed and how long did GC take.
+#
+# Default: False.
+pihole_cfg_debug_gc: false
+
+# Enable ARP debugging?
+#
+# Print information about ARP table processing: How long did parsing take,
+# whether read MAC addresses are valid, and if the macvendor.db file exists.
+#
+# Default: False.
+pihole_cfg_debug_arp: false
+
+# Enable regex debugging?
+#
+# Controls if FTLDNS should print extended details about regex matching into
+# FTL.log.
+#
+# Default: False.
+pihole_cfg_debug_regex: false
+
+# Enable API debugging?
+#
+# Only use when debugging specific API issues related to client connections.
+# Logs all API requests (auth log), autentication attempts, and details about
+# users.
+#
+# Print extra debugging information concerning API calls. Includes:
+# * Request.
+# * Request parameters.
+# * Internal details about how algorithms decide which data to present and in
+#   what form.
+#
+# Default: False.
+pihole_cfg_debug_api: false
+
+# Enable TLS debugging?
+#
+# Use when debugging specific TLS issues related to client connections.
+#
+# Print extra debugging information about TLS connections. Includes:
+# * TLS version.
+# * Cipher suite.
+# * Certificate chain and much more.
+#
+# Default: False.
+pihole_cfg_debug_tls: false
+
+# Enable overtime memory operation debugging?
+#
+# Print information about overTime memory operations, such as initializing or
+# moving overTime slots.
+#
+# Default: False.
+pihole_cfg_debug_overtime: false
+
+# Enable status change debugging?
+#
+# Print information about status changes for individual queries. This can be
+# useful to identify unexpected unknown queries.
+#
+# Default: False.
+pihole_cfg_debug_status: false
+
+# Enable capabilities debugging?
+#
+# Print information about capabilities granted to the pihole-FTL process.
+#
+# Default: False.
+pihole_cfg_debug_caps: false
+
+# Enable DNSSEC debugging?
+#
+# Print information about DNSSEC activity.
+#
+# Default: False.
+pihole_cfg_debug_dnssec: false
+
+# Enable vectors debugging?
+#
+# FTL uses dynamically allocated vectors for various tasks. This config option
+# enables extensive debugging information such as information about allocation,
+# referencing, deletion, and appending.
+#
+# Default: False.
+pihole_cfg_debug_vectors: false
+
+# Enable DNS resolver debugging?
+#
+# Extensive information about hostname resolution like which DNS servers are
+# used in the first and second hostname resolving tries (only affecting
+# internally generated PTR queries).
+#
+# Default: False.
+pihole_cfg_debug_resolver: false
+
+# Enable EDNS debugging?
+#
+# Print debugging information about received EDNS(0) data.
+#
+# Default: False.
+pihole_cfg_debug_edns0: false
+
+# Enable client debugging?
+#
+# Log various important client events such as change of interface (e.g., client
+# switching from WiFi to wired or VPN connection), as well as extensive
+# reporting about how clients were assigned to its groups.
+#
+# Default: False.
+pihole_cfg_debug_clients: false
+
+# Enable alias-client debugging?
+#
+# Log information related to alias-client processing.
+#
+# Default: False.
+pihole_cfg_debug_aliasclients: false
+
+# Enable events debugging?
+#
+# Log information regarding FTL's embedded event handling queue.
+#
+# Default: False.
+pihole_cfg_debug_events: false
+
+# Enable helper debugging?
+#
+# Log information about script helpers, e.g., due to dhcp-script.
+#
+# Default: False.
+pihole_cfg_debug_helper: false
+
+# Enable config debugging?
+#
+# Print config parsing details.
+#
+# Default: False.
+pihole_cfg_debug_config: false
+
+# Enable inotify debugging?
+#
+# Debug monitoring of /etc/pihole filesystem events.
+#
+# Default: False.
+pihole_cfg_debug_inotify: false
+
+# Enable webserver debugging?
+#
+# Debug monitoring of the webserver (CivetWeb) events.
+#
+# Default: False.
+pihole_cfg_debug_webserver: false
+
+# Enable extra debugging?
+#
+# Temporary flag that may print additional information. This debug flag is
+# meant to be used whenever needed for temporary investigations. The logged
+# content may change without further notice at any time.
+#
+# Default: False.
+pihole_cfg_debug_extra: false
+
+# Enable reserved debugging?
+#
+# Reserved debug flag.
+#
+# Default: False.
+pihole_cfg_debug_reserved: false
+
+# Enable NTP debugging?
+#
+# Print information about NTP synchronization.
+#
+# Default: False.
+pihole_cfg_debug_ntp: false
+
+# Enable netlink debugging?
+#
+# Print information about netlink communication and parsing.
+#
+# Default: False.
+pihole_cfg_debug_netlink: false
+
+# Enable all debugging?
+#
+# Set all debug flags at once. This is a convenience option to enable all debug
+# flags at once.
+#
+# Special Case:
+#   * Setting this options will toggle all debug options to this value.
+#
+# Default: False.
+pihole_cfg_debug_all: false

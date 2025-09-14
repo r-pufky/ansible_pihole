@@ -1,0 +1,88 @@
+---
+###############################################################################
+# Prep
+###############################################################################
+# Create custom PiHole user and initial etc directory. Check for existing TOML
+# file for version information before writing settings for installer. QR codes
+# require package installation.
+#
+# Generates:
+#   _pihole: dict - Role runtime specific config.
+
+- name: 'Install | packages'
+  ansible.builtin.include_role:
+    name: 'r_pufky.deb.apt'
+  vars:
+    apt_packages:
+      - '{{ pihole_role_packages }}'
+    apt_package_update_cache: true
+
+- name: 'Prep | manage users'
+  when: _pihole_srv_create_user.raw
+  ansible.builtin.include_role:
+    name: 'r_pufky.deb.users'
+    tasks_from: 'role_account_add.yml'
+  vars:
+    users_role_user: '{{ pihole_role_user }}'
+    users_role_group: '{{ pihole_role_group }}'
+
+- name: 'Prep | enumerate system user {{ _pihole_srv_user.raw }}'
+  ansible.builtin.user:
+    name: '{{ _pihole_srv_user.raw }}'
+  check_mode: true
+  changed_when: false
+  register: _pihole_srv_user_query
+
+- name: 'Prep | parse system user UID/GID'
+  ansible.builtin.set_fact:
+    _pihole_uid: '{{ _pihole_srv_user_query.uid }}'
+    _pihole_gid: '{{ _pihole_srv_user_query.group }}'
+
+- name: 'Prep | parse system user UID/GID'
+  ansible.builtin.set_fact:
+    _pihole_srv_user: '{{
+        _pihole_srv_user |
+        combine({"role_uid": _pihole_srv_user_query.uid})
+      }}'
+    _pihole_srv_group: '{{
+        _pihole_srv_group |
+        combine({"role_gid": _pihole_srv_user_query.group})
+      }}'
+
+- name: 'Prep | create {{ pihole_role_etc_dir }}'
+  ansible.builtin.file:
+    path: '{{ pihole_role_etc_dir }}'
+    owner: '{{ _pihole_srv_user.raw }}'
+    group: '{{ _pihole_srv_group.raw }}'
+    mode: '0755'
+    state: 'directory'
+
+- name: 'Prep | create {{ pihole_role_balloon_root }}'
+  ansible.builtin.file:
+    path: '{{ pihole_role_balloon_root }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+    state: 'directory'
+
+- name: 'Prep | query version'
+  ansible.builtin.command:
+    argv:
+      - 'grep'
+      - '# Pi-hole configuration file ('
+      - '{{ pihole_role_toml_file }}'
+  changed_when: false
+  failed_when: false  # 0,1: file exists; 2: file not found.
+  register: _pihole_toml
+
+- name: 'Prep | query installer cache'
+  ansible.builtin.stat:
+    path: '/tmp/basic-install.sh'
+  register: _pihole_cache
+
+- name: 'Prep | parse version'
+  ansible.builtin.set_fact:
+    _pihole:
+      installed: '{{ true if _pihole_toml.rc in [0, 1] else false }}'
+      version: "{{ _pihole_toml.stdout | regex_search('\\(v(.+)\\)', '\\1') }}"
+      install_cache: '{{ _pihole_cache.stat.exists }}'

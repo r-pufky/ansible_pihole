@@ -1,87 +1,64 @@
 ---
 ###############################################################################
-# Pi-Hole install
+# Install
 ###############################################################################
-# DNS blackhole.
+# Installer automatically builds 'pihole-meta' package must be executed in full
+# bash shell. pihole.toml is required before installation or dialog prompts
+# will appear (even in --unattended) to set required defaults.
 #
-# Use teleport to migrate non-gravity settings: pihole -a -t
+# pihole.toml is modified in place when the service is running, injecting
+# default values and comments. A pihole.toml.broken file will appear if a
+# rendered file is incorrect (variable values or syntax). All other config
+# options are now stored in the database and accessed via the REST API.
 #
-# Teleport regenerates DB data but does not preserve long-term data. Only copy
-# DB's if you want this data. Teleporter includes pihole FTL settings data.
-#
-# Reference:
-# * https://docs.pi-hole.net/core/pihole-command/#teleport
-# * https://r-pufky.github.io/docs/services/pihole/setup.html#service-pihole-setup
-# * https://gist.github.com/bendews/e09edfc60e581ec4c686c4b70297f543
+# Additional configuration through REST API requires service to be running.
 
-# Pi-Hole will set correct permissions on install and startup.
-- name: 'Install | create /etc/pihole'
-  ansible.builtin.file:
-    path:  '/etc/pihole'
-    mode:  '0775'
-    state: 'directory'
-
-- name: 'Install | set deployment config'
+- name: 'Install | set pihole.toml'
   ansible.builtin.template:
-    src:   'setupVars.conf.j2'
-    dest:  '/etc/pihole/setupVars.conf'
-    owner: 'root'
-    group: 'root'
-    mode:  '0644'
-  notify: 'Restart pihole dns'
+    src: 'pihole.toml.j2'
+    dest: '{{ pihole_role_toml_file }}'
+    owner: '{{ _pihole_srv_user.raw }}'
+    group: '{{ _pihole_srv_group.raw }}'
+    mode: '0644'
 
-- name: 'Install | set binary location'
-  ansible.builtin.stat:
-    path: '/usr/local/bin/pihole'
-  register: _pihole_binary
-
-- name: 'Install | determine if pihole is installed'
-  ansible.builtin.set_fact:
-    pihole_installed: '{{ _pihole_binary.stat.exists | default(false) }}'
+- name: 'Install | set tls.pem'
+  when: _pihole_cfg_webserver_tls_cert.raw | length > 0
+  ansible.builtin.copy:
+    src: '{{ _pihole_cfg_webserver_tls_cert.role_src }}'
+    dest: '{{ _pihole_cfg_webserver_tls_cert.role_dest }}'
+    owner: '{{ _pihole_srv_user.raw }}'
+    group: '{{ _pihole_srv_group.raw }}'
+    mode: '0600'
 
 - name: 'Install | fetching latest installer'
+  when: not _pihole.installed and not _pihole.install_cache
   ansible.builtin.get_url:
-    url:  'https://install.pi-hole.net'
-    dest: '/tmp/pihole-install.sh'
+    url: 'https://install.pi-hole.net'
+    dest: '/tmp/basic-install.sh'
     mode: 'u+rwx'
-  ignore_errors: '{{ ansible_check_mode }}'
-  when: not pihole_installed
 
-- name: 'Install | install'
-  when: not pihole_installed
-  block:
-    - name: 'Install | standard install'  # noqa no-changed-when
-      ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
-      when: not pihole_docker
+- name: 'Install | execute installer'
+  when: not _pihole.installed
+  ansible.builtin.shell: '/tmp/basic-install.sh --unattended'
+  args:
+    executable: '/bin/bash'
+  environment:
+    DEBIAN_FRONTEND: 'noninteractive'
+  changed_when: true
 
-    - name: 'Install | docker install'  # noqa no-changed-when
-      ansible.builtin.command: '/tmp/pihole-install.sh --unattended'
-      environment:
-        DEBIAN_FRONTEND: noninteractive
-      when: pihole_docker
+- name: 'Install | update'
+  when: pihole_srv_update_enable
+  ansible.builtin.shell: 'pihole -up'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
 
-- name: 'Install | set FTL config'
-  ansible.builtin.template:
-    src: 'pihole-FTL.conf.j2'
-    dest: '/etc/pihole/pihole-FTL.conf'
-    owner: 'pihole'
-    group: 'root'
-    mode: '0664' # installed permissions.
-  notify: 'Restart pihole dns'
-
-# Generate random password if no password is set.
-#
-# Another manual method:
-#   echo -n P@ssw0rd | sha256sum | awk '{printf "%s",$1 }' | sha256sum
-#
-# Reference:
-# * https://medium.com/@AbhijeetKasurde/ansible-generating-random-string-using-password-lookup-plugin-7cd3431a0d0
-# * https://discourse.pi-hole.net/t/what-is-setupvars-conf-and-how-do-i-use-it/3533/5
-- name: 'Install | set random password (no install password set)'  # noqa no-changed-when
-  ansible.builtin.command: "pihole -a -p {{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
-  when: pihole_webpassword|string|length == 0
-
-- name: 'Install | set password'  # noqa no-changed-when
-  ansible.builtin.command: 'pihole -a -p {{ pihole_webpassword }}'
-  when: pihole_webpassword|string|length > 0
-  no_log: true # password
+- name: 'Install | start services'
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    enabled: true
+    daemon_reload: true
+    state: 'started'
+  failed_when: false
+  loop:
+    - 'pihole-FTL.service'

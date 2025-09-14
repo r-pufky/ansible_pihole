@@ -1,0 +1,95 @@
+---
+###############################################################################
+# Ballon Password Hashing
+###############################################################################
+# Install balloon password hashing helper libraries for PiHole configuration.
+# Generate password hashes if needed.
+#
+# r_pufky.deb.repo cannot be used for balloon-hashing as no releases exist.
+# Effectively this is a bare git checkout with convenience wrappers. Use
+# r_pufky.deb.repo when able.
+#
+# Keys are currently published without user ID's, which makes verification
+# impossible.
+#
+# Reference:
+# * https://github.com/nachonavarro/balloon-hashing
+# * https://github.com/nachonavarro/balloon-hashing/issues/16
+
+- name: 'Balloon | query library'
+  ansible.builtin.stat:
+    path: '{{ pihole_role_balloon_root ~ "/balloon.py" }}'
+  register: _pihole_balloon
+
+- name: 'Balloon | download in progress 🗘'
+  when: not _pihole_balloon.stat.exists
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │     Assets are being downloaded. This may take a few minutes.     │
+      │                                                                   │
+      ╰───────────────────────────────────────────────────────────────────╯
+
+- name: 'Balloon | {{ file }}'  # noqa latest[git] no versions released.
+  when: not _pihole_balloon.stat.exists
+  ansible.builtin.git:
+    repo: '{{ pihole_role_git_repo }}'
+    dest: '{{ pihole_role_balloon_root }}'
+    gpg_allowlist: '{{ pihole_role_git_gpg_signing_keys }}'
+    verify_commit: false  # TODO(upstream): Author needs to expose user ID.
+    clone: true
+  register: _pihole_download
+  until: _pihole_download is succeeded
+  retries: 3
+  delay: 2
+
+- name: 'Balloon | add pihole_hash generator'
+  ansible.builtin.template:
+    src: 'pihole_hash.py.j2'
+    dest: '{{ pihole_role_etc_dir ~ "/pihole_hash.py" }}'
+    owner: '{{ _pihole_srv_user.raw }}'
+    group: '{{ _pihole_srv_group.raw }}'
+    mode: '0750'
+
+- name: 'Balloon | hash pihole_cfg_webserver_api_pwhash'
+  when: >
+    _pihole_cfg_webserver_api_pwhash.raw | length > 0 and
+    not _pihole_cfg_webserver_api_pwhash.raw.startswith('$BALLOON-SHA256')
+  ansible.builtin.shell:
+    '/etc/pihole/pihole_hash.py {{ _pihole_cfg_webserver_api_pwhash.raw }}'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
+  register: _pihole_web_hash
+
+- name: 'Balloon | hash pihole_cfg_webserver_api_app_pwhash'
+  when: >
+    _pihole_cfg_webserver_api_app_pwhash.raw | length > 0 and
+    not _pihole_cfg_webserver_api_app_pwhash.raw.startswith('$BALLOON-SHA256')
+  ansible.builtin.shell:
+    '/etc/pihole/pihole_hash.py {{ _pihole_cfg_webserver_api_app_pwhash.raw }}'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
+  register: _pihole_app_hash
+
+- name: 'Balloon | update data'
+  ansible.builtin.set_fact:
+    _pihole_cfg_webserver_api_pwhash: '{{
+        _pihole_cfg_webserver_api_pwhash |
+        combine({"data": _pihole_web_hash.stdout |
+                         default(_pihole_cfg_webserver_api_pwhash.raw)})
+      }}'
+    _pihole_cfg_webserver_api_app_pwhash: '{{
+        _pihole_cfg_webserver_api_app_pwhash |
+        combine({"data": _pihole_app_hash.stdout |
+                         default(_pihole_cfg_webserver_api_app_pwhash.raw)})
+      }}'
+
+- name: 'Balloon | update config map'
+  ansible.builtin.set_fact:
+    _pihole_map: '{{
+        hostvars[inventory_hostname] | dict2items |
+        selectattr("key", "match", "_pihole_cfg_*")
+      }}'

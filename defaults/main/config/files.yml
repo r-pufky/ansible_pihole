@@ -1,0 +1,47 @@
+---
+###############################################################################
+# Files (files)
+###############################################################################
+
+# FTL main process PID. Default: '/run/pihole-FTL.pid'.
+pihole_cfg_files_pid: '/run/pihole-FTL.pid'
+
+# FTL long-term database. Default: '/etc/pihole/pihole-FTL.db'.
+pihole_cfg_files_database: '/etc/pihole/pihole-FTL.db'
+
+# Gravity database location. Default: '/etc/pihole/gravity.db'.
+pihole_cfg_files_gravity: '/etc/pihole/gravity.db'
+
+# Gravity update temporary file location. Default: '/tmp'.
+pihole_cfg_files_gravity_tmp: '/tmp'
+
+# MAC → Vendor database for network table. Default: '/etc/pihole/macvendor.db'.
+pihole_cfg_files_macvendor: '/etc/pihole/macvendor.db'
+
+# Network traffic PCAP capture data.
+#
+# Used for debugging purposes only. If you don't know what this is, you don't
+# need it.
+#
+# Values:
+#   {PATH}: Absolute path to capture file. Automatically created with correct
+#           permissions; appended to if already existing.
+#       '': Disables PCAP recording (default).
+#
+# Default: '' (disabled).
+pihole_cfg_files_pcap: ''
+
+###############################################################################
+# Files Log (files.log)
+###############################################################################
+
+# FTL log location. Default: '/var/log/pihole/FTL.log'.
+pihole_cfg_files_log_ftl: '/var/log/pihole/FTL.log'
+
+# Embedded dnsmasq DNS server log location.
+#
+# Default: '/var/log/pihole/pihole.log'.
+pihole_cfg_files_log_dnsmasq: '/var/log/pihole/pihole.log'
+
+# Webserver log location. Default: '/var/log/pihole/webserver.log'.
+pihole_cfg_files_log_webserver: '/var/log/pihole/webserver.log'

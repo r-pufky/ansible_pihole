@@ -1,0 +1,24 @@
+# Pi-hole configuration file ({{ _pihole_srv_version.raw }})
+# Encoding: UTF-8
+
+{% for header in _pihole_order %}
+{% set depth = (header | length - (header | replace('.', '') | length)) * '  ' %}
+{{ depth }}[{{ header }}]
+{%   for section in _pihole_map | selectattr('value.section', '==', header) | sort(attribute='value.order') %}
+{%     if not section.value.deprecated %}
+{%       if section.value.key in ['hostRecord', 'pwhash', 'totp_secret', 'app_pwhash'] %}
+{{ depth }}  {{ section.value.key }} = "{{ section.value.data }}"
+{%       elif section.value.key == 'cert' %}
+{{ depth }}  {{ section.value.key }} = "{{ section.value.role_dest }}"
+{%       elif section.value.hint == 'bool' %}
+{{ depth }}  {{ section.value.key }} = {{ section.value.raw | lower }}
+{%       elif section.value.hint == 'str' %}
+{{ depth }}  {{ section.value.key }} = "{{ section.value.raw }}"
+{%       elif section.value.hint == 'list of dict' %}
+{{ depth }}  {{ section.value.key }} = {{ section.value.data }}
+{%       else %}
+{{ depth }}  {{ section.value.key }} = {{ section.value.raw }}
+{%       endif %}
+{%     endif %}
+{%   endfor %}
+{% endfor %}

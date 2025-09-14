@@ -1,0 +1,125 @@
+---
+###############################################################################
+# Miscellaneous Options (misc)
+###############################################################################
+
+# PiHole statistic privacy level.
+#
+# Change forces restart.
+#
+# Values:
+#   0: Don't hide anything - all statistics are available (default).
+#   1: Hide domains - disables Top Domains and Top Ads.
+#   2: Hide domains and clients - disables Top Domains, Top Ads, TopClients,
+#      and Clients over time.
+#   3: Anonymize everything - disables almost any statistics and query
+#      analysis. There will be no long-term database logging and no Query Log.
+#      You will also lose most regex features.
+#
+# Default: 0 (do not hide).
+pihole_cfg_misc_privacylevel: 0
+
+# Delay FTL startup after initial machine boot (seconds).
+#
+# Some network interfaces appear only late during system startup and are not
+# ready when FTL tries to bind to them. Pause FTL before trying to start DNS
+# resolver. Delay only takes place within the first 180 seconds (hard-coded)
+# after booting.
+#
+# Values:
+#   0-300: Delay startup.
+#
+# Default: 0 (no delay).
+pihole_cfg_misc_delay_startup: 0
+
+# FTL niceness.
+#
+# Influence CPU scheduler to favor or disfavor a process in scheduling
+# decisions.
+#
+# Values:
+#    -20: Modern linux high priority.
+#    +19: Modern linux low priority.
+#   -999: Disabled.
+#
+# Default: -10.
+pihole_cfg_misc_nice: -10
+
+# Enable stack addresses translation to code lines during backtrace?
+#
+# This improves the analysis of crashed significantly. It is recommended to
+# leave enabled. Only be disabled when addr2line is known to not be working
+# correctly as it can prevent from generating any backtrace at all.
+#
+# Default: True.
+pihole_cfg_misc_addr2line: true
+
+# Load additional dnsmasq configuration files from /etc/dnsmasq.d/?
+#
+# Incorrectly formatted or config files specifying options which can only be
+# defined once can result in conflicts with automatic configuration of PiHole
+# (see /etc/pihole/dnsmasq.conf) and may stop DNS resolution from working.
+#
+# Default: False.
+pihole_cfg_misc_etc_dnsmasq_d: false
+
+# Additional dnsmasq lines to inject into generated dnsmasq configuration.
+#
+# Incorrectly formatted or duplicated lines as well as lines conflicting with
+# automatic configuration of PiHole can break embedded dnsmasq and will stop
+# DNS resolution from working.
+#
+# Default: [].
+pihole_cfg_misc_dnsmasq_lines: []
+
+# Log additional information about queries and replies?
+#
+# Requires pihole_cfg_dns_query_logging=true.
+#
+# Not recommended for normal use, only debugging.
+#
+# Logged to pihole.log. Additional information:
+# * Serial number of individual query.
+# * IP address of requestor.
+#
+# Default: False.
+pihole_cfg_misc_extra_logging: false
+
+# Set configuration read-only.
+#
+# Prevents any changes to config via API or CLI. For infrastructure-as-code
+# deployments and should not be changed manually.
+#
+# Default: False.
+pihole_cfg_misc_read_only: false
+
+###############################################################################
+# Miscellaneous Check (misc.check)
+###############################################################################
+
+# Check for excessive load every 15 minutes? Default: True.
+pihole_cfg_misc_check_load: true
+
+# Shared memory usage warning limit (percentage).
+#
+# Shared memory used to allow inter-process communication with forked dedicated
+# TCP workers. If FTL runs out of memory, it cannot continue to work as queries
+# cannot be analyzed any further.
+#
+# Values:
+#   100: 100% shared memory use (max).
+#     0: Disabled.
+#
+# Default: 90.
+pihole_cfg_misc_check_shmem: 90
+
+# Disk usage warning limit (percentage).
+#
+# Warns if usage of disk holding any crucial file exceeds limit.
+#
+# Values:
+#   100: 100% disk use (max).
+#     0: Disabled.
+#
+# Default: 90.
+pihole_cfg_misc_check_disk: 90

@@ -1,0 +1,38 @@
+---
+###############################################################################
+# Database (database)
+###############################################################################
+
+# Enable database load on startup for recent history awareness? Default: True.
+pihole_cfg_database_db_import: true
+
+# Time to store queries in database (days). 0 Disables. Default: 91.
+pihole_cfg_database_max_db_days: 91
+
+# Query storage write interval (seconds). Default: 60.
+pihole_cfg_database_db_interval: 60
+
+# Enable Write-Ahead log (WAL) mode?
+#
+# Recommend enabling for performance reasons. If you are experiencing specific
+# issues (e.g. using database accessed from multiple hosts via network share)
+# then disable.
+#
+# Disabling uses SQLite3 rollback journal in DELETE mode.
+#
+# Default: True.
+pihole_cfg_database_use_wal: true
+
+###############################################################################
+# Database Network (database.network)
+###############################################################################
+
+# Enable APR cache analysis?
+#
+# Disabling causes client identification and network table reliably issues.
+#
+# Default: True.
+pihole_cfg_database_network_parse_arp_cache: true
+
+# Network addresses table IP address retention period (days). Default: 91.
+pihole_cfg_database_network_expire: 91

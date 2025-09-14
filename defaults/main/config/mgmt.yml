@@ -1,0 +1,134 @@
+---
+###############################################################################
+# Pi-Hole Management Lists
+###############################################################################
+# Management lists are configured via the REST API. Application password used
+# with fallback to web password with TOTP token prompt.
+#
+# Requires:
+# * pihole_srv_api set.
+# * pihole_cfg_webserver_api_totp_secret set.
+# * pihole_cfg_webserver_api_app_pwhash or pihole_cfg_webserver_api_pwhash set.
+
+# TODO(role): Update and modernize these when implementing API.
+# Define Adlist sources for generating domain blocklists.
+#
+# stevenblack's hosts adlist is automatically added when installing as ID 1.
+#
+# pihole_cfg_mgmt_ad_sources:
+#   - id: int (unique id starting at 1)
+#     address: str (URL for adlist)
+#     enabled: bool (enable use)
+#     comment: str (user comment)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/#adlist-table-adlist
+
+pihole_cfg_mgmt_ad_sources: []
+#  - id: 1
+#    address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+#    enabled: true
+#    comment: 'Migrated from /etc/pihole/adlists.list'
+
+###############################################################################
+# Pi-Hole Domain Blocklist Table
+###############################################################################
+# Define domain blocking behavior (whitelist, blacklist).
+#
+# pihole_cfg_mgmt_domain_blocklists:
+#   - id: int (unique id starting at 1)
+#     type: int (0 = exact whitelist,
+#                1 = exact blacklist,
+#                2 = regex whitelist,
+#                3 = regex blacklist)
+#     domain: str (domain)
+#     enabled: bool (enable use)
+#     comment: str (user comment)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/#domain-tables-domainlist
+
+pihole_cfg_mgmt_domain_blocklists: []
+
+###############################################################################
+# Pi-Hole Clients Table
+###############################################################################
+# Define Pi-Hole clients. All clients are automatically added to the 'Default'
+# group in Pi-Hole to automatically enforce blocking.
+#
+# pihole_cfg_mgmt_clients:
+#   - id: int (unique id starting at 1)
+#     ip: str (IPv4,IPv6,CIDR)
+#     comment: str (user comment)
+#     remove_default_group: bool (remove from automatic 'Default' group)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/#client-table-client
+
+pihole_cfg_mgmt_clients: []
+
+###############################################################################
+# Pi-Hole Groups Table
+###############################################################################
+# Define Pi-Hole group management.
+#
+# Group 'Default' (id 0) is special as it is automatically assigned to domains
+# and clients not being a member of other groups. Each newly added client or
+# domain gets assigned to group zero when being added.
+#
+# pihole_cfg_mgmt_groups:
+#   - id: int (unique id starting at 1)
+#     enabled: bool (enable use)
+#     name: str (group name)
+#     description: str (description)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/groups/#group-management
+
+pihole_cfg_mgmt_groups: []
+#   - id: 0
+#     enabled: true
+#     name: 'Default'
+#     description: 'The default group'
+
+###############################################################################
+# Pi-Hole Groups Adlist Table
+###############################################################################
+# Define Pi-Hole group adlist management.
+#
+# pihole_cfg_mgmt_ad_groups_blocklist:
+#   - adlist_id: int (existing adlist ID)
+#     group_id: int (existing group ID)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/groups/
+
+pihole_cfg_mgmt_ad_groups_blocklist: []
+
+###############################################################################
+# Pi-Hole Groups Clients Table
+###############################################################################
+# Define Pi-Hole group clients blocklists management.
+#
+# pihole_cfg_mgmt_client_groups_blocklist:
+#   - client_id: int (existing client ID)
+#     group_id: int (existing group ID)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/groups/
+
+pihole_cfg_mgmt_client_groups_blocklist: []
+
+###############################################################################
+# Pi-Hole Groups Domain Blocklists Table
+###############################################################################
+# Define Pi-Hole group domain blocklists management.
+#
+# pihole_cfg_mgmt_domain_groups_blocklist:
+#   - domainlist_id: int (existing domain blocklist ID)
+#     group_id: int (existing group ID)
+#
+# Reference:
+# * https://docs.pi-hole.net/database/gravity/groups/
+
+pihole_cfg_mgmt_domain_groups_blocklist: []

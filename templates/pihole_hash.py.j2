@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""
+Generate PiHole compatible Balloon SHA256 hashes from CLI.
+
+Requires: https://github.com/nachonavarro/balloon-hashing
+"""
+
+import base64
+import os
+import random
+import string
+import sys
+
+sys.path.insert(0, '/opt/balloon-hashing')
+
+# pylint: disable=import-error,wrong-import-position
+import balloon as b
+
+USAGE = f'''
+python3 {os.path.basename(__file__)} <password> [salt]
+
+Generate BALLOON-SHA256 hash for use in PiHole.
+
+Options:
+  password: Password to hash.
+      salt: Alphanumeric salt to use (defaults to 16 random characters).
+
+Exit Codes:
+0: success.
+1: Invalid arguments.
+2: Base64 encoding/decoding type error.
+3: Invalid values used for password hashing.
+'''
+
+def random_salt(seed: str = None) -> str:
+    """
+    Generate salt.
+
+    Args:
+      seed: Use provided seed instead of random generation.
+
+    Returns:
+      str: salt.
+    """
+    if seed is None:
+        return ''.join(
+          random.choice(
+            string.ascii_uppercase +
+            string.ascii_lowercase +
+            string.digits
+          )
+          for _ in range(16))
+    return seed
+
+def pihole_hash(
+    pw: str,
+    pw_salt: str,
+    space_cost: int = {{ pihole_role_hash_space | default(1024) }},
+    time_cost: int = {{ pihole_role_hash_time | default(32) }},
+    version: int = {{ pihole_role_hash_version | default(1) }}
+) -> str:
+    """
+    Generate BALLOON-SHA256 hash for use in PiHole.
+
+    Args:
+      pw: Password to hash.
+      pw_salt: Salt for hash.
+      space_cost: Space cost for balloon hashing.
+      time_cost: Time cost for ballon hashing.
+
+    Returns:
+      str: Hashed string for pihole.toml usage.
+
+    Reference:
+    * https://github.com/pi-hole/FTL/blob/master/src/config/password.c#L201
+    """
+    try:
+        salt_base64 = base64.b64encode(bytes(pw_salt, 'utf-8'))
+        hash_base64 = base64.b64encode(
+          b.balloon(pw, pw_salt, space_cost=1024, time_cost=32)
+        )
+    except TypeError as e:
+        print(f'error: {e}')
+        sys.exit(2)
+    except ValueError as e:
+        print(f'error: {e}')
+        sys.exit(3)
+
+    return (
+      f'$BALLOON-SHA256$v={version}$s={space_cost},t={time_cost}'
+      f'${salt_base64.decode("utf-8")}'
+      f'${hash_base64.decode("utf-8")}'
+    )
+
+def main():
+    """Hash password."""
+    if len(sys.argv) < 2:
+        print(USAGE)
+        sys.exit(1)
+
+    if len(sys.argv) == 3:
+        print(pihole_hash(sys.argv[1], random_salt(sys.argv[2])))
+    else:
+        print(pihole_hash(sys.argv[1], random_salt()))
+
+if __name__ == "__main__":
+    main()

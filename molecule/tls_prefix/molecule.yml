@@ -1,0 +1,62 @@
+---
+###############################################################################
+# TLS / Prefix
+###############################################################################
+# Custom TLS certificate is loaded correctly; ensure address prefix renders.
+#
+# Tests:
+# * /etc/pihole/pihole.pem is set correctly.
+# * pihole_cfg_webserver_paths_prefix is set correctly.
+# * /etc/pihole/pihole.toml.broken does NOT exist.
+
+dependency:
+  name: 'galaxy'
+driver:
+  name: 'podman'
+provisioner:
+  name: 'ansible'
+  config_options:
+    defaults:
+      interpreter_python: 'auto_silent'
+      callback_whitelist: 'profile_tasks, timer, yaml'
+    ssh_connection:
+      pipelining: false
+  inventory:
+    group_vars:
+      all:
+        pihole_cfg_webserver_tls_cert: '{{
+                lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+                "/molecule/cache/pihole_test.pem"
+              }}'
+        pihole_cfg_webserver_paths_prefix: '/pihole'
+        pihole_cfg_webserver_api_pwhash: 'test'
+        pihole_cfg_webserver_api_app_pwhash: ''
+        pihole_srv_api_config_enable: false
+platforms:
+  - name: 'pihole-debian-13-tls_prefix'
+    image: 'ghcr.io/hifis-net/debian-systemd:13'
+    systemd: 'always'
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    command: '/lib/systemd/systemd'
+    pre_build_image: true
+verifier:
+  name: 'ansible'
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+scenario:
+  test_sequence:
+    # - 'dependency'
+    # - 'cleanup'
+    - 'destroy'
+    - 'syntax'
+    - 'create'
+    - 'prepare'
+    - 'converge'
+    # - 'idempotence'  # services always restarted.
+    # - 'side_effect'
+    - 'verify'
+    # - 'cleanup'
+    - 'destroy'

@@ -1,0 +1,168 @@
+---
+- name: 'Converge'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Converge | assert deprecated variables are detected'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert deprecated variables are detected'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_pihole_dns_1 did not trigger assertion.'
+        pihole_pihole_dns_1: '8.8.8.8'
+
+    - name: 'Converge | assert host force4 requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert host force4 requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_dns_host_ipv4 did not trigger assertion.'
+        pihole_cfg_dns_host_force4: true
+        pihole_cfg_dns_host_ipv4: ''
+
+    - name: 'Converge | assert host force6 requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert host force6 requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_dns_host_ipv4 did not trigger assertion.'
+        pihole_cfg_dns_host_force6: true
+        pihole_cfg_dns_host_ipv4: ''
+
+    - name: 'Converge | assert blocking force4 requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert blocking force4 requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_dns_host_ipv4 did not trigger assertion.'
+        pihole_cfg_dns_blocking_force4: true
+        pihole_cfg_dns_blocking_ipv4: ''
+
+    - name: 'Converge | assert blocking force6 requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert blocking force6 requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_dns_host_ipv4 did not trigger assertion.'
+        pihole_cfg_dns_blocking_force6: true
+        pihole_cfg_dns_blocking_ipv4: ''
+
+    - name: 'Converge | assert BALLOON-SHA256 requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert BALLOON-SHA256 requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_pwhash did not trigger assertion.'
+        pihole_srv_balloon_enable: false
+        pihole_cfg_webserver_api_pwhash: 'test'
+
+    - name: 'Converge | assert TOTP hash requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert TOTP hash requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_totp_secret did not trigger assertion.'
+        pihole_cfg_webserver_api_totp_secret: 'test'
+
+    - name: 'Converge | assert app password TOTP requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert app password TOTP requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_totp_secret did not trigger assertion.'
+        pihole_cfg_webserver_api_app_pwhash: 'test'
+        pihole_cfg_webserver_api_totp_secret: ''
+
+    - name: 'Converge | assert password requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert password requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_totp_secret did not trigger assertion.'
+        pihole_srv_balloon_enable: false
+        pihole_cfg_webserver_api_pwhash: 'test'
+
+    - name: 'Converge | assert extra logging requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert extra logging requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_totp_secret did not trigger assertion.'
+        pihole_cfg_webserver_api_app_pwhash: ''
+        pihole_cfg_misc_extra_logging: true
+        pihole_cfg_dns_query_logging: false
+
+    - name: 'Converge | assert debug flag requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert debug flag requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_totp_secret did not trigger assertion.'
+        pihole_cfg_webserver_api_app_pwhash: ''
+        pihole_cfg_debug_flags: true
+        pihole_cfg_debug_queries: false
+
+    - name: 'Converge | assert REST API password requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert REST API requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'Blank passwords did not trigger assertion.'
+        pihole_srv_api_config_enable: true
+        pihole_srv_api: 'https://localhost:443/api'
+        pihole_cfg_webserver_api_pwhash: ''
+        pihole_cfg_webserver_api_totp_secret:
+          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
+        pihole_cfg_webserver_api_app_pwhash: ''
+
+    - name: 'Converge | assert REST API password requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert REST API requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_cfg_webserver_api_pwhash did not trigger assertion.'
+        pihole_srv_api_config_enable: true
+        pihole_srv_api: ''
+        pihole_cfg_webserver_api_pwhash: 'test'
+        pihole_cfg_webserver_api_totp_secret:
+          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
+        pihole_cfg_webserver_api_app_pwhash: 'test'

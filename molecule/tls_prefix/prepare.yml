@@ -1,0 +1,118 @@
+---
+- name: 'Prepare'
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: 'Prepare | generate cache location'
+      ansible.builtin.set_fact:
+        _test_cache:
+          '{{ lookup("env", "MOLECULE_PROJECT_DIRECTORY") }}/molecule/cache'
+
+    - name: 'Prepare | create cache'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'create_cache.yml'
+      vars:
+        test_name: 'Prepare cache'
+
+    - name: 'Prepare | check basic-install.sh'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'cache_url.yml'
+      vars:
+        test_name: 'Prepare | cache basic-install.sh'
+        test_dest: 'basic-install.sh'
+        test_url: 'https://install.pi-hole.net'
+        test_mode: '0640'
+
+    - name: 'Prepare | check balloon'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'cache_git.yml'
+      vars:
+        test_name: 'Prepare | cache balloon'
+        test_dest: 'balloon'
+        test_repo: 'https://github.com/nachonavarro/balloon-hashing'
+
+    - name: 'Prepare | cache RSA private key'
+      ansible.builtin.command:
+        argv:
+          - 'openssl'
+          - 'genrsa'
+          - '-out'
+          - '{{ _test_cache }}/pihole_test.key'
+          - '2048'
+        creates: '{{ _test_cache }}/pihole_test.key'
+
+    - name: 'Prepare | cache certificate signing request CSR'
+      ansible.builtin.command:
+        argv:
+          - 'openssl'
+          - 'req'
+          - '-new'
+          - '-key'
+          - '{{ _test_cache }}/pihole_test.key'
+          - '-out'
+          - '{{ _test_cache }}/pihole_test.csr'
+          - '-subj'
+          - '/CN=127.0.01'
+        creates: '{{ _test_cache }}/pihole_test.csr'
+
+    - name: 'Prepare | cache self-signed certificate'
+      ansible.builtin.command:
+        argv:
+          - 'openssl'
+          - 'x509'
+          - '-req'
+          - '-days'
+          - '3600'
+          - '-in'
+          - '{{ _test_cache }}/pihole_test.csr'
+          - '-signkey'
+          - '{{ _test_cache }}/pihole_test.key'
+          - '-out'
+          - '{{ _test_cache }}/pihole_test.crt'
+        creates: '{{ _test_cache }}/pihole_test.crt'
+
+    - name: 'Prepare | cache pihole_test.pem'
+      ansible.builtin.shell: >
+        cat
+        {{ _test_cache }}/pihole_test.crt {{ _test_cache }}/pihole_test.key >
+        {{ _test_cache }}/pihole_test.pem
+      args:
+        creates: '{{ _test_cache }}/pihole_test.pem'
+
+- name: 'Prepare'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Prepare | install rsync'
+      ansible.builtin.apt:
+        name: 'rsync'
+        state: 'present'
+
+    - name: 'Prepare | stage basic-install.sh'
+      ansible.builtin.copy:
+        src: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/basic-install.sh"
+          }}'
+        dest: '/tmp/basic-install.sh'
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+        directory_mode: '0755'
+        force: false
+
+    - name: 'Prepare | stage balloon'
+      ansible.posix.synchronize:
+        src: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/balloon/"
+          }}'
+        dest: '/opt/balloon-hashing'
+        delete: true
+        recursive: true
+        archive: false
+        checksum: true

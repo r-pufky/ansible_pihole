@@ -1,0 +1,39 @@
+---
+###############################################################################
+# Resolver (resolver)
+###############################################################################
+
+# Enable IPv4 address resolution to hostnames? Default: True.
+pihole_cfg_resolver_resolve_ipv4: true
+
+# Enable IPv6 address resolution to hostnames? Default: True.
+pihole_cfg_resolver_resolve_ipv6: true
+
+# Enable fallback network table check to obtain client names?
+#
+# Assume an IPv6 client without hostname. Network table knows - via client MAC
+# address - that this is the same device where we have a host name for another
+# IP address (e.g. a DHCP server managed IPv4 address). In this case, we use
+# hostname associated to other address as this is the same device.
+#
+# Default: True.
+pihole_cfg_resolver_network_names: true
+
+# Check for changes in client and upstream server hostnames via PTR requests.
+#
+# Values:
+#   IPV4_ONLY: Hourly IPv4 PTR lookups only. Should resolve issues with more
+#              and more very short-lived PE IPv6 addresses coming up in a lot
+#              of networks - default since FTL v5.3.2 (default).
+#         ALL: Hourly PTR lookups for all addresses. May create a lot of PTR
+#              queries for those with many IPv6 addresses in their networks -
+#              default until FTL v5.3.1.
+#     UNKNOWN: Only resolve unknown hostnames. No PTR queries made for clients
+#              where hostnames are known. Existing hostnames are never
+#              refreshed. Known hostnames will not be updated once known.
+#        NONE: No hourly PTR lookups. Lookup host names exactly once (when we
+#              first see a client) and never again. May miss future changes of
+#              host names.
+#
+# Default: 'IPV4_ONLY'.
+pihole_cfg_resolver_refresh_names: 'IPV4_ONLY'

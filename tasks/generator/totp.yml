@@ -1,0 +1,53 @@
+---
+###############################################################################
+# TOTP Generator
+###############################################################################
+# Configure TOTP using a seed value or a pre-existing hash. Display QR code for
+# end user setup as well as the secret key.
+
+- name: 'TOTP | hash secret'
+  when: _pihole_cfg_webserver_api_totp_secret.raw | length == 20
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    echo '{{ _pihole_cfg_webserver_api_totp_secret.raw }}' |
+    head -c 20 | base64 | base32 | cut -c 1-32
+  changed_when: false
+  register: _pihole_totp
+
+- name: 'TOTP | update pihole_cfg_webserver_api_totp_secret'
+  ansible.builtin.set_fact:
+    _pihole_cfg_webserver_api_totp_secret: '{{
+        _pihole_cfg_webserver_api_totp_secret |
+        combine({"data":
+          _pihole_cfg_webserver_api_totp_secret.raw
+          if _pihole_cfg_webserver_api_totp_secret.raw | length == 32 else
+          _pihole_totp.stdout[:32]})
+      }}'
+
+- name: 'TOTP | update config map'
+  ansible.builtin.set_fact:
+    _pihole_map: '{{
+        hostvars[inventory_hostname] | dict2items |
+        selectattr("key", "match", "_pihole_cfg_*")
+      }}'
+
+- name: 'TOTP | generate QR code'
+  when: _pihole_srv_totp_display_enable.raw
+  ansible.builtin.command: >-
+    qrencode -t ansiutf8
+    "{{ _pihole_cfg_webserver_api_totp_secret.data }}"
+  changed_when: false
+  register: _pihole_qr
+
+- name: 'TOTP | authenticator setup ⚠'
+  when: _pihole_srv_totp_display_enable.raw
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                    Authenticator TOTP QR Code                     │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Scan the QR code or manually enter the TOTP hash to setup 2FA:
+      {{ _pihole_qr.stdout }}
+      {{ _pihole_cfg_webserver_api_totp_secret.data }}

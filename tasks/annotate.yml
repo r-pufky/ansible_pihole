@@ -1,0 +1,2080 @@
+---
+###############################################################################
+# Annotate User Configuration
+###############################################################################
+# Sanitize service configuration. Use data annotations to track config mapping
+# and variable deprecation.
+#
+# A necessary evil given the limitations of argument_spec:
+# * Strong validation and sanitization of user input.
+# * Annotated variable providing context and rendering hints.
+# * Logic updates centrally located in tasks.
+# * Simplified role updates for variable changes.
+# * All data touched by user is in a standard, expected format.
+#
+# Annotated Defaults (2.0):
+# _{VAR}: dict - Annotated and sanitized default variable.
+#   section: str - Section name.
+#   key: str - Config file key.
+#   raw: any - Raw value from user, defaults, or role defaults.
+#   data: any - Processed raw value for use in rendering. Optional.
+#   default: any - Role default (testing for changed defaults).
+#   hint: str - Value rendering type hint (docstring types).
+#   role_*: any - Role specific usage. Optional.
+#   added: str - Release version variable added.
+#       Special Case:
+#         0.0.0: Unknown or since role inception.
+#   sensitive: bool - True for PII/SPII data that should not be logged.
+#   deprecated: bool - True if no longer used in current role release.
+#   order: int - Order item should appear in templated files.
+#
+# Generates:
+#   _pihole_map: list of dict - Annotated config map.
+#   _pihole_order: list of str - Config section order.
+#
+# Reference:
+# * https://docs.pi-hole.net/ftldns/configfile
+
+# <ip>,<host>
+- name: 'Annotate | parse pihole_cfg_dns_hosts'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dns_hosts:
+      '{{ _pihole_cfg_dns_hosts | default([]) + [item.ip ~ " " ~ item.host] }}'
+  loop: '{{ pihole_cfg_dns_hosts }}'
+  loop_control:
+    label: '{{ item.host }}'
+
+# <cname>,<target>[,<TTL>]
+- name: 'Annotate | parse pihole_cfg_dns_cname_records'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dns_cname_records: '{{
+        _pihole_cfg_dns_cname_records | default([]) +
+        [
+          item.cname ~ "," ~
+          item.target ~
+          (
+            ""
+            if item.ttl | default("") | string | length == 0 else
+            "," ~ item.ttl
+          )
+        ]
+      }}'
+  loop: '{{ pihole_cfg_dns_cname_records }}'
+  loop_control:
+    label: '{{ item.cname }}'
+
+# <enabled>,<ip-address>[/<prefix-len>],<server>[#<port>][,<domain>]
+- name: 'Annotate | parse pihole_cfg_dns_rev_servers'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dns_rev_servers: '{{
+        _pihole_cfg_dns_rev_servers | default([]) +
+        [
+          item.enabled ~ "," ~
+          item.ip ~ "," ~
+          item.server ~
+          (
+            ""
+            if item.domain | default("") | length == 0 else
+            "," ~ item.domain
+          )
+        ]
+      }}'
+  loop: '{{ pihole_cfg_dns_rev_servers }}'
+  loop_control:
+    label: '{{ item.server }}'
+
+# [<hwaddr>][,id:<client_id>|*][,set:<tag>][,tag:<tag>][,<ipaddr>][,<hostname>]
+# [,<lease_time>][,ignore]
+- name: 'Annotate | parse pihole_cfg_dhcp_hosts'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dhcp_hosts: '{{
+        _pihole_cfg_dhcp_hosts | default([]) +
+        [
+          (
+            [item.hwaddr] | flatten | join(",")
+            if item.hwaddr | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            ",id:" ~ item.id
+            if item.id | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            ",set:" ~ [item.set] | flatten | join(",set:")
+            if item.set | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            ",tag:" ~ [item.tag] | flatten | join(",tag:")
+            if item.tag | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            "," ~ [item.ip] | flatten | join(",")
+            if item.ip | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            "," ~ item.hostname
+            if item.hostname | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            "," ~ item.lease
+            if item.lease | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            ",ignore"
+            if item.ignore | default(false) else
+            ""
+          )
+        ]
+      }}'
+  loop: '{{ pihole_cfg_dhcp_hosts | default([]) }}'
+  loop_control:
+    label: '{{ item.hostname | default(item.ip) }}'
+
+# ['<header>: <value>']
+- name: 'Annotate | parse pihole_cfg_webserver_headers'
+  ansible.builtin.set_fact:
+    _pihole_cfg_webserver_headers: "{{
+        _pihole_cfg_webserver_headers | default([]) +
+        [item.header ~ ': ' ~ item.value]
+      }}"
+  loop: '{{ pihole_cfg_webserver_headers }}'
+  loop_control:
+    label: '{{ item.header }}'
+
+- name: 'Annotate | sanitize & annotate service defaults'
+  ansible.builtin.set_fact:
+    _pihole_srv_version: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_version }}',
+      default: 'v6.2.3',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_srv_update_enable: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_update_enable }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_srv_user: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_role_user.name }}',  # Not user configurable.
+      default: 'pihole',
+      role_uid: '',  # (str) UID.
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_srv_group: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_role_group.name }}',  # Not user configurable.
+      default: 'pihole',
+      role_gid: '',  # (str) GID.
+      hint: 'str',
+      added: '0.0.0',
+      sensitive: false,
+      deprecated: false,
+      order: 4,
+    }
+    _pihole_srv_totp_display_enable: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_totp_display_enable }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5,
+    }
+    _pihole_srv_api: {
+      section: '',
+      key: '',
+      raw: "{{ pihole_srv_api | regex_replace('/$', '') }}",
+      default: 'https://localhost:443/api',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6,
+    }
+    _pihole_srv_api_config_enable: {
+      section: '',
+      key: '',
+      raw: "{{ pihole_srv_api_config_enable }}",
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 7,
+    }
+    _pihole_srv_create_user: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_create_user }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 8,
+    }
+    _pihole_cfg_dns_upstreams: {
+      section: 'dns',
+      key: 'upstreams',
+      raw: '{{ pihole_cfg_dns_upstreams }}',
+      default: ['8.8.8.8', '4.4.4.4'],
+      hint: 'list of str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_cname_deep_inspect: {
+      section: 'dns',
+      key: 'CNAMEdeepInspect',
+      raw: '{{ pihole_cfg_dns_cname_deep_inspect }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dns_block_esni: {
+      section: 'dns',
+      key: 'blockESNI',
+      raw: '{{ pihole_cfg_dns_block_esni }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dns_edns0_ecs: {
+      section: 'dns',
+      key: 'EDNS0ECS',
+      raw: '{{ pihole_cfg_dns_edns0_ecs }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4,
+    }
+    _pihole_cfg_dns_ignore_localhost: {
+      section: 'dns',
+      key: 'ignoreLocalhost',
+      raw: '{{ pihole_cfg_dns_ignore_localhost }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5,
+    }
+    _pihole_cfg_dns_show_dnssec: {
+      section: 'dns',
+      key: 'showDNSSEC',
+      raw: '{{ pihole_cfg_dns_show_dnssec }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6,
+    }
+    _pihole_cfg_dns_analyze_only_a_and_aaaa: {
+      section: 'dns',
+      key: 'analyzeOnlyAandAAAA',
+      raw: '{{ pihole_cfg_dns_analyze_only_a_and_aaaa }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 7,
+    }
+    _pihole_cfg_dns_pihole_ptr: {
+      section: 'dns',
+      key: 'piholePTR',
+      raw: '{{ pihole_cfg_dns_pihole_ptr | upper }}',
+      default: 'PI.HOLE',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 8,
+    }
+    _pihole_cfg_dns_reply_when_busy: {
+      section: 'dns',
+      key: 'replyWhenBusy',
+      raw: '{{ pihole_cfg_dns_reply_when_busy | upper }}',
+      default: 'ALLOW',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 9,
+    }
+    _pihole_cfg_dns_block_ttl: {
+      section: 'dns',
+      key: 'blockTTL',
+      raw: '{{ pihole_cfg_dns_block_ttl }}',
+      default: 2,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 10,
+    }
+    _pihole_cfg_dns_hosts: {
+      section: 'dns',
+      key: 'hosts',
+      raw: '{{ pihole_cfg_dns_hosts }}',
+      data: '{{ _pihole_cfg_dns_hosts | default([]) }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 11,
+    }
+    _pihole_cfg_dns_domain_needed: {
+      section: 'dns',
+      key: 'domainNeeded',
+      raw: '{{ pihole_cfg_dns_domain_needed }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 12,
+    }
+    _pihole_cfg_dns_expand_hosts: {
+      section: 'dns',
+      key: 'expandHosts',
+      raw: '{{ pihole_cfg_dns_expand_hosts }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 13,
+    }
+    _pihole_cfg_dns_domain: {
+      section: 'dns',
+      key: 'domain',
+      raw: '{{ pihole_cfg_dns_domain }}',
+      default: 'lan',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 14,
+    }
+    _pihole_cfg_dns_bogus_priv: {
+      section: 'dns',
+      key: 'bogusPriv',
+      raw: '{{ pihole_cfg_dns_bogus_priv }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 14,
+    }
+    _pihole_cfg_dns_dnssec: {
+      section: 'dns',
+      key: 'dnssec',
+      raw: '{{ pihole_cfg_dns_dnssec }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 15,
+    }
+    _pihole_cfg_dns_interface: {
+      section: 'dns',
+      key: 'interface',
+      raw: '{{ pihole_cfg_dns_interface }}',
+      default: 'eth0',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 16,
+    }
+    _pihole_cfg_dns_host_record: {
+      section: 'dns',
+      key: 'hostRecord',
+      raw: '{{ pihole_cfg_dns_host_record }}',
+      # <name>[,<name>....],[<IPv4-address>],[<IPv6-address>][,<TTL>].
+      data: '{{
+          ""
+          if pihole_cfg_dns_host_record | length == 0 else
+          [pihole_cfg_dns_host_record.name] | flatten | join(",") ~
+          (
+            "," ~ pihole_cfg_dns_host_record.ipv4
+            if pihole_cfg_dns_host_record.ipv4 | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            "," ~ pihole_cfg_dns_host_record.ipv6
+            if pihole_cfg_dns_host_record.ipv6 | default("") | length > 0 else
+            ""
+          ) ~
+          (
+            "," ~ pihole_cfg_dns_host_record.ttl
+            if
+              pihole_cfg_dns_host_record.ttl |
+              default("") | string | length > 0
+            else
+            ""
+          )
+        }}',
+      default: {},
+      hint: 'dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: true,
+      order: 17,
+    }
+    _pihole_cfg_dns_listening_mode: {
+      section: 'dns',
+      key: 'listeningMode',
+      raw: '{{ pihole_cfg_dns_listening_mode | upper }}',
+      default: 'LOCAL',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 18,
+    }
+    _pihole_cfg_dns_query_logging: {
+      section: 'dns',
+      key: 'queryLogging',
+      raw: '{{ pihole_cfg_dns_query_logging }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 19,
+    }
+    _pihole_cfg_dns_cname_records: {
+      section: 'dns',
+      key: 'cnameRecords',
+      raw: '{{ pihole_cfg_dns_cname_records }}',
+      data: '{{ _pihole_cfg_dns_cname_records | default([]) }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 20,
+    }
+    _pihole_cfg_dns_port: {
+      section: 'dns',
+      key: 'port',
+      raw: '{{ pihole_cfg_dns_port }}',
+      default: 53,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 21,
+    }
+    _pihole_cfg_dns_rev_servers: {
+      section: 'dns',
+      key: 'revServers',
+      raw: '{{ pihole_cfg_dns_rev_servers }}',
+      data: '{{ _pihole_cfg_dns_rev_servers | default([]) }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 22,
+    }
+    _pihole_cfg_dns_size: {
+      section: 'dns.cache',
+      key: 'size',
+      raw: '{{ pihole_cfg_dns_size }}',
+      default: 10000,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_optimizer: {
+      section: 'dns.cache',
+      key: 'optimizer',
+      raw: '{{ pihole_cfg_dns_optimizer }}',
+      default: 3600,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dns_upstream_blocked_ttl: {
+      section: 'dns.cache',
+      key: 'upstreamBlockedTTL',
+      raw: '{{ pihole_cfg_dns_upstream_blocked_ttl }}',
+      default: 86400,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dns_active: {
+      section: 'dns.blocking',
+      key: 'active',
+      raw: '{{ pihole_cfg_dns_active }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_mode: {
+      section: 'dns.blocking',
+      key: 'mode',
+      raw: '{{ pihole_cfg_dns_mode | upper }}',
+      default: 'NULL',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dns_edns: {
+      section: 'dns.blocking',
+      key: 'edns',
+      raw: '{{ pihole_cfg_dns_edns | upper }}',
+      default: 'TEXT',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dns_mozilla_canary: {
+      section: 'dns.specialDomains',
+      key: 'mozillaCanary',
+      raw: '{{ pihole_cfg_dns_mozilla_canary }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_icloud_private_relay: {
+      section: 'dns.specialDomains',
+      key: 'iCloudPrivateRelay',
+      raw: '{{ pihole_cfg_dns_icloud_private_relay }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dns_designated_resolver: {
+      section: 'dns.specialDomains',
+      key: 'designatedResolver',
+      raw: '{{ pihole_cfg_dns_designated_resolver }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dns_host_force4: {
+      section: 'dns.reply.host',
+      key: 'force4',
+      raw: '{{ pihole_cfg_dns_host_force4 }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_host_ipv4: {
+      section: 'dns.reply.host',
+      key: 'IPv4',
+      raw: '{{ pihole_cfg_dns_host_ipv4 }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dns_host_force6: {
+      section: 'dns.reply.host',
+      key: 'force6',
+      raw: '{{ pihole_cfg_dns_host_force6 }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dns_host_ipv6: {
+      section: 'dns.reply.host',
+      key: 'IPv6',
+      raw: '{{ pihole_cfg_dns_host_ipv6 }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4,
+    }
+    _pihole_cfg_dns_blocking_force4: {
+      section: 'dns.reply.blocking',
+      key: 'force4',
+      raw: '{{ pihole_cfg_dns_blocking_force4 }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_blocking_ipv4: {
+      section: 'dns.reply.blocking',
+      key: 'IPv4',
+      raw: '{{ pihole_cfg_dns_blocking_ipv4 }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dns_blocking_force6: {
+      section: 'dns.reply.blocking',
+      key: 'force6',
+      raw: '{{ pihole_cfg_dns_blocking_force6 }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dns_blocking_ipv6: {
+      section: 'dns.reply.blocking',
+      key: 'IPv6',
+      raw: '{{ pihole_cfg_dns_blocking_ipv6 }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4,
+    }
+    _pihole_cfg_dns_count: {
+      section: 'dns.rateLimit',
+      key: 'count',
+      raw: '{{ pihole_cfg_dns_count }}',
+      default: 1000,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dns_interval: {
+      section: 'dns.rateLimit',
+      key: 'interval',
+      raw: '{{ pihole_cfg_dns_interval }}',
+      default: 60,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dhcp_active: {
+      section: 'dhcp',
+      key: 'active',
+      raw: '{{ pihole_cfg_dhcp_active }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_dhcp_start: {
+      section: 'dhcp',
+      key: 'start',
+      raw: '{{ pihole_cfg_dhcp_start }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_dhcp_end: {
+      section: 'dhcp',
+      key: 'end',
+      raw: '{{ pihole_cfg_dhcp_end }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_dhcp_router: {
+      section: 'dhcp',
+      key: 'router',
+      raw: '{{ pihole_cfg_dhcp_router }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4,
+    }
+    _pihole_cfg_dhcp_netmask: {
+      section: 'dhcp',
+      key: 'netmask',
+      raw: '{{ pihole_cfg_dhcp_netmask }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5,
+    }
+    _pihole_cfg_dhcp_lease_time: {
+      section: 'dhcp',
+      key: 'leaseTime',
+      raw: '{{ pihole_cfg_dhcp_lease_time }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6,
+    }
+    _pihole_cfg_dhcp_ipv6: {
+      section: 'dhcp',
+      key: 'ipv6',
+      raw: '{{ pihole_cfg_dhcp_ipv6 }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 7,
+    }
+    _pihole_cfg_dhcp_rapid_commit: {
+      section: 'dhcp',
+      key: 'rapidCommit',
+      raw: '{{ pihole_cfg_dhcp_rapid_commit }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 8,
+    }
+    _pihole_cfg_dhcp_multi_dns: {
+      section: 'dhcp',
+      key: 'multiDNS',
+      raw: '{{ pihole_cfg_dhcp_multi_dns }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 9,
+    }
+    _pihole_cfg_dhcp_logging: {
+      section: 'dhcp',
+      key: 'logging',
+      raw: '{{ pihole_cfg_dhcp_logging }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 10,
+    }
+    _pihole_cfg_dhcp_ignore_unknown_clients: {
+      section: 'dhcp',
+      key: 'ignoreUnknownClients',
+      raw: '{{ pihole_cfg_dhcp_ignore_unknown_clients }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 11,
+    }
+    _pihole_cfg_dhcp_hosts: {
+      section: 'dhcp',
+      key: 'hosts',
+      raw: '{{ pihole_cfg_dhcp_hosts }}',
+      data: '{{ _pihole_cfg_dhcp_hosts | default([]) }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 12
+    }
+    _pihole_cfg_dhcp_ntp_ipv4_active: {
+      section: 'ntp.ipv4',
+      key: 'active',
+      raw: '{{ pihole_cfg_dhcp_ntp_ipv4_active }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_dhcp_ntp_ipv4_address: {
+      section: 'ntp.ipv4',
+      key: 'address',
+      raw: '{{ pihole_cfg_dhcp_ntp_ipv4_address }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_dhcp_ntp_ipv6_active: {
+      section: 'ntp.ipv6',
+      key: 'active',
+      raw: '{{ pihole_cfg_dhcp_ntp_ipv6_active }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_dhcp_ntp_ipv6_address: {
+      section: 'ntp.ipv6',
+      key: 'address',
+      raw: '{{ pihole_cfg_dhcp_ntp_ipv6_address }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_dhcp_ntp_sync_active: {
+      section: 'ntp.sync',
+      key: 'active',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_active }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_dhcp_ntp_sync_server: {
+      section: 'ntp.sync',
+      key: 'server',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_server }}',
+      default: 'pool.ntp.org',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_dhcp_ntp_sync_interval: {
+      section: 'ntp.sync',
+      key: 'interval',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_interval }}',
+      default: 3600,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_dhcp_ntp_sync_count: {
+      section: 'ntp.sync',
+      key: 'count',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_count }}',
+      default: 8,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_dhcp_ntp_sync_set: {
+      section: 'ntp.sync.rtc',
+      key: 'set',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_set }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_dhcp_ntp_sync_device: {
+      section: 'ntp.sync.rtc',
+      key: 'device',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_device }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_dhcp_ntp_sync_utc: {
+      section: 'ntp.sync.rtc',
+      key: 'utc',
+      raw: '{{ pihole_cfg_dhcp_ntp_sync_utc }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_resolver_resolve_ipv4: {
+      section: 'resolver',
+      key: 'resolveIPv4',
+      raw: '{{ pihole_cfg_resolver_resolve_ipv4 }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_resolver_resolve_ipv6: {
+      section: 'resolver',
+      key: 'resolveIPv6',
+      raw: '{{ pihole_cfg_resolver_resolve_ipv6 }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_resolver_network_names: {
+      section: 'resolver',
+      key: 'networkNames',
+      raw: '{{ pihole_cfg_resolver_network_names }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_resolver_refresh_names: {
+      section: 'resolver',
+      key: 'refreshNames',
+      raw: '{{ pihole_cfg_resolver_refresh_names | upper }}',
+      default: 'IPV4_ONLY',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_database_db_import: {
+      section: 'database',
+      key: 'DBimport',
+      raw: '{{ pihole_cfg_database_db_import }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_database_max_db_days: {
+      section: 'database',
+      key: 'maxDBdays',
+      raw: '{{ pihole_cfg_database_max_db_days }}',
+      default: 91,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_database_db_interval: {
+      section: 'database',
+      key: 'DBinterval',
+      raw: '{{ pihole_cfg_database_db_interval }}',
+      default: 60,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_database_use_wal: {
+      section: 'database',
+      key: 'useWAL',
+      raw: '{{ pihole_cfg_database_use_wal }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_database_network_parse_arp_cache: {
+      section: 'database.network',
+      key: 'parseARPcache',
+      raw: '{{ pihole_cfg_database_network_parse_arp_cache }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_database_network_expire: {
+      section: 'database.network',
+      key: 'expire',
+      raw: '{{ pihole_cfg_database_network_expire }}',
+      default: 91,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_webserver_domain: {
+      section: 'webserver',
+      key: 'domain',
+      raw: '{{ pihole_cfg_webserver_domain }}',
+      default: 'pi.hole',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_acl: {
+      section: 'webserver',
+      key: 'acl',
+      raw: '{{ pihole_cfg_webserver_acl }}',
+      data: '{{ pihole_cfg_webserver_acl | join(",") }}',
+      default: [],
+      hint: 'list of str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_webserver_port: {
+      section: 'webserver',
+      key: 'port',
+      raw: '{{ pihole_cfg_webserver_port }}',
+      data: '{{ pihole_cfg_webserver_port | join(",") }}',
+      default: [],
+      hint: 'list of str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_webserver_threads: {
+      section: 'webserver',
+      key: 'threads',
+      raw: '{{ pihole_cfg_webserver_threads }}',
+      default: 50,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_webserver_headers: {
+      section: 'webserver',
+      key: 'headers',
+      raw: '{{ pihole_cfg_webserver_headers }}',
+      data: '{{ _pihole_cfg_webserver_headers }}',
+      default: [
+        {header: 'X-DNS-Prefetch-Control', value: 'off'},
+        {header: 'Content-Security-Policy',
+         value: "default-src 'self' 'unsafe-inline';"},
+        {header: 'X-Frame-Options', value: 'DENY'},
+        {header: 'X-XSS-Protection', value: '0'},
+        {header: 'X-Content-Type-Options', value: 'nosniff'},
+        {header: 'Referrer-Policy', value: 'strict-origin-when-cross-origin'},
+      ],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5
+    }
+    _pihole_cfg_webserver_serve_all: {
+      section: 'webserver',
+      key: 'serve_all',
+      raw: '{{ pihole_cfg_webserver_serve_all }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6
+    }
+    _pihole_cfg_webserver_session_timeout: {
+      section: 'webserver.session',
+      key: 'timeout',
+      raw: '{{ pihole_cfg_webserver_session_timeout }}',
+      default: 1800,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_session_restore: {
+      section: 'webserver.session',
+      key: 'restore',
+      raw: '{{ pihole_cfg_webserver_session_restore }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_webserver_tls_cert: {
+      section: 'webserver.tls',
+      key: 'cert',
+      raw: '{{ pihole_cfg_webserver_tls_cert }}',
+      default: '',
+      role_src: '{{ pihole_cfg_webserver_tls_cert }}',
+      role_dest: '/etc/pihole/tls.pem',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_paths_webroot: {
+      section: 'webserver.paths',
+      key: 'webroot',
+      raw: '{{ pihole_cfg_webserver_paths_webroot }}',
+      default: '/var/www/html',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_paths_webhome: {
+      section: 'webserver.paths',
+      key: 'webhome',
+      raw: "{{
+          pihole_cfg_webserver_paths_webhome |
+          regex_replace('^(?!/)', '/') |
+          regex_replace('([^/])$', '\\1/')
+        }}",  # PiHole requires leading/trailing /.
+      default: '/admin/',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_webserver_paths_prefix: {
+      section: 'webserver.paths',
+      key: 'prefix',
+      raw: "{{
+          pihole_cfg_webserver_paths_prefix | regex_replace('\\/?$', '/')
+          if pihole_cfg_webserver_paths_prefix | length > 0 else
+          ''
+        }}",  # PiHole requires leading /.
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_webserver_interface_boxed: {
+      section: 'webserver.interface',
+      key: 'boxed',
+      raw: '{{ pihole_cfg_webserver_interface_boxed }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_interface_theme: {
+      section: 'webserver.interface',
+      key: 'theme',
+      raw: '{{ pihole_cfg_webserver_interface_theme }}',
+      default: 'default-auto',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_webserver_api_max_sessions: {
+      section: 'webserver.api',
+      key: 'max_sessions',
+      raw: '{{ pihole_cfg_webserver_api_max_sessions }}',
+      default: 16,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_api_pretty_json: {
+      section: 'webserver.api',
+      key: 'prettyJSON',
+      raw: '{{ pihole_cfg_webserver_api_pretty_json }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_webserver_api_pwhash: {
+      section: 'webserver.api',
+      key: 'pwhash',
+      raw: '{{ pihole_cfg_webserver_api_pwhash }}',
+      data: '{{ pihole_cfg_webserver_api_pwhash }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: true,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_webserver_api_totp_secret: {
+      section: 'webserver.api',
+      key: 'totp_secret',
+      raw: '{{ pihole_cfg_webserver_api_totp_secret }}',
+      data: '',  # (str) TOTP hash calculated in prep.
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: true,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_webserver_api_app_pwhash: {
+      section: 'webserver.api',
+      key: 'app_pwhash',
+      raw: '{{ pihole_cfg_webserver_api_app_pwhash }}',
+      data: '{{ pihole_cfg_webserver_api_app_pwhash }}',
+      default: '',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: true,
+      deprecated: false,
+      order: 5
+    }
+    _pihole_cfg_webserver_api_app_sudo: {
+      section: 'webserver.api',
+      key: 'app_sudo',
+      raw: '{{ pihole_cfg_webserver_api_app_sudo }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6
+    }
+    _pihole_cfg_webserver_api_cli_pw: {
+      section: 'webserver.api',
+      key: 'cli_pw',
+      raw: '{{ pihole_cfg_webserver_api_cli_pw }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: true,
+      deprecated: false,
+      order: 7
+    }
+    _pihole_cfg_webserver_api_exclude_clients: {
+      section: 'webserver.api',
+      key: 'excludeClients',
+      raw: '{{ pihole_cfg_webserver_api_exclude_clients }}',
+      data: '{{ pihole_cfg_webserver_api_exclude_clients | join(",") }}',
+      default: !unsafe [],
+      hint: 'list of str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 8
+    }
+    _pihole_cfg_webserver_api_exclude_domains: {
+      section: 'webserver.api',
+      key: 'excludeDomains',
+      raw: '{{ pihole_cfg_webserver_api_exclude_domains }}',
+      data: '{{ pihole_cfg_webserver_api_exclude_domains | join(",") }}',
+      default: !unsafe [],
+      hint: 'list of str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 9
+    }
+    _pihole_cfg_webserver_api_max_history: {
+      section: 'webserver.api',
+      key: 'maxHistory',
+      raw: '{{ pihole_cfg_webserver_api_max_history }}',
+      default: 86400,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 10
+    }
+    _pihole_cfg_webserver_api_max_clients: {
+      section: 'webserver.api',
+      key: 'maxClients',
+      raw: '{{ pihole_cfg_webserver_api_max_clients }}',
+      default: 10,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 11
+    }
+    _pihole_cfg_webserver_api_client_history_global_max: {
+      section: 'webserver.api',
+      key: 'client_history_global_max',
+      raw: '{{ pihole_cfg_webserver_api_client_history_global_max }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 12
+    }
+    _pihole_cfg_webserver_api_allow_destructive: {
+      section: 'webserver.api',
+      key: 'allow_destructive',
+      raw: '{{ pihole_cfg_webserver_api_allow_destructive }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 13
+    }
+    pihole_cfg_webserver_api_temp_limit: {
+      section: 'webserver.api.temp',
+      key: 'limit',
+      raw: '{{ pihole_cfg_webserver_api_temp_limit }}',
+      default: 60.000000,
+      hint: 'float',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_webserver_api_temp_unit: {
+      section: 'webserver.api.temp',
+      key: 'unit',
+      raw: '{{ pihole_cfg_webserver_api_temp_unit | upper }}',
+      default: 'C',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_files_pid: {
+      section: 'files',
+      key: 'pid',
+      raw: '{{ pihole_cfg_files_pid }}',
+      default: '/run/pihole-FTL.pid',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_files_database: {
+      section: 'files',
+      key: 'database',
+      raw: '{{ pihole_cfg_files_database }}',
+      default: '/etc/pihole/pihole-FTL.db',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_files_gravity: {
+      section: 'files',
+      key: 'gravity',
+      raw: '{{ pihole_cfg_files_gravity }}',
+      default: '/etc/pihole/pihole-FTL.db',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_files_gravity_tmp: {
+      section: 'files',
+      key: 'gravity_tmp',
+      raw: '{{ pihole_cfg_files_gravity_tmp }}',
+      default: '/tmp',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_files_macvendor: {
+      section: 'files',
+      key: 'macvendor',
+      raw: '{{ pihole_cfg_files_macvendor }}',
+      default: '/etc/pihole/macvendor.db',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5
+    }
+    _pihole_cfg_files_pcap: {
+      section: 'files',
+      key: 'pcap',
+      raw: '{{ pihole_cfg_files_pcap }}',
+      default: '',  # Need to create file if defined.
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5
+    }
+    _pihole_cfg_files_log_ftl: {
+      section: 'files.log',
+      key: 'ftl',
+      raw: '{{ pihole_cfg_files_log_ftl }}',
+      default: '/var/log/pihole/FTL.log',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_files_log_dnsmasq: {
+      section: 'files.log',
+      key: 'dnsmasq',
+      raw: '{{ pihole_cfg_files_log_dnsmasq }}',
+      default: '/var/log/pihole/pihole.log',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_files_log_webserver: {
+      section: 'files.log',
+      key: 'webserver',
+      raw: '{{ pihole_cfg_files_log_webserver }}',
+      default: '/var/log/pihole/webserver.log',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_misc_privacylevel: {
+      section: 'misc',
+      key: 'privacylevel',
+      raw: '{{ pihole_cfg_misc_privacylevel }}',
+      default: 0,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_misc_delay_startup: {
+      section: 'misc',
+      key: 'delay_startup',
+      raw: '{{ pihole_cfg_misc_delay_startup }}',
+      default: 0,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_misc_nice: {
+      section: 'misc',
+      key: 'nice',
+      raw: '{{ pihole_cfg_misc_nice }}',
+      default: -10,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_misc_addr2line: {
+      section: 'misc',
+      key: 'addr2line',
+      raw: '{{ pihole_cfg_misc_addr2line }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_misc_etc_dnsmasq_d: {
+      section: 'misc',
+      key: 'etc_dnsmasq_d',
+      raw: '{{ pihole_cfg_misc_etc_dnsmasq_d }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5
+    }
+    _pihole_cfg_misc_dnsmasq_lines: {
+      section: 'misc',
+      key: 'dnsmasq_lines',
+      raw: '{{ pihole_cfg_misc_dnsmasq_lines }}',
+      data: '{{ pihole_cfg_misc_dnsmasq_lines }}',
+      default: [],
+      hint: 'list of str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6
+    }
+    _pihole_cfg_misc_extra_logging: {
+      section: 'misc',
+      key: 'extraLogging',
+      raw: '{{ pihole_cfg_misc_extra_logging }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 7
+    }
+    _pihole_cfg_misc_read_only: {
+      section: 'misc',
+      key: 'readOnly',
+      raw: '{{ pihole_cfg_misc_read_only }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 8
+    }
+    _pihole_cfg_misc_check_load: {
+      section: 'misc.check',
+      key: 'load',
+      raw: '{{ pihole_cfg_misc_check_load }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_misc_check_shmem: {
+      section: 'misc.check',
+      key: 'shmem',
+      raw: '{{ pihole_cfg_misc_check_shmem }}',
+      default: 90,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_misc_check_disk: {
+      section: 'misc.check',
+      key: 'disk',
+      raw: '{{ pihole_cfg_misc_check_disk }}',
+      default: 90,
+      hint: 'int',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_debug_database: {
+      section: 'debug',
+      key: 'database',
+      raw: '{{ pihole_cfg_debug_database }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1
+    }
+    _pihole_cfg_debug_networking: {
+      section: 'debug',
+      key: 'networking',
+      raw: '{{ pihole_cfg_debug_networking }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2
+    }
+    _pihole_cfg_debug_locks: {
+      section: 'debug',
+      key: 'locks',
+      raw: '{{ pihole_cfg_debug_locks }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3
+    }
+    _pihole_cfg_debug_queries: {
+      section: 'debug',
+      key: 'queries',
+      raw: '{{ pihole_cfg_debug_queries }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4
+    }
+    _pihole_cfg_debug_flags: {
+      section: 'debug',
+      key: 'flags',
+      raw: '{{ pihole_cfg_debug_flags }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5
+    }
+    _pihole_cfg_debug_shmem: {
+      section: 'debug',
+      key: 'shmem',
+      raw: '{{ pihole_cfg_debug_shmem }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6
+    }
+    _pihole_cfg_debug_gc: {
+      section: 'debug',
+      key: 'gc',
+      raw: '{{ pihole_cfg_debug_gc }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 7
+    }
+    _pihole_cfg_debug_arp: {
+      section: 'debug',
+      key: 'arp',
+      raw: '{{ pihole_cfg_debug_arp }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 8
+    }
+    _pihole_cfg_debug_regex: {
+      section: 'debug',
+      key: 'regex',
+      raw: '{{ pihole_cfg_debug_regex }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 9
+    }
+    _pihole_cfg_debug_api: {
+      section: 'debug',
+      key: 'api',
+      raw: '{{ pihole_cfg_debug_api }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 10
+    }
+    _pihole_cfg_debug_tls: {
+      section: 'debug',
+      key: 'tls',
+      raw: '{{ pihole_cfg_debug_tls }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 11
+    }
+    _pihole_cfg_debug_overtime: {
+      section: 'debug',
+      key: 'overtime',
+      raw: '{{ pihole_cfg_debug_overtime }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 12
+    }
+    _pihole_cfg_debug_status: {
+      section: 'debug',
+      key: 'status',
+      raw: '{{ pihole_cfg_debug_status }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 13
+    }
+    _pihole_cfg_debug_caps: {
+      section: 'debug',
+      key: 'caps',
+      raw: '{{ pihole_cfg_debug_caps }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 14
+    }
+    _pihole_cfg_debug_dnssec: {
+      section: 'debug',
+      key: 'dnssec',
+      raw: '{{ pihole_cfg_debug_dnssec }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 15
+    }
+    _pihole_cfg_debug_vectors: {
+      section: 'debug',
+      key: 'vectors',
+      raw: '{{ pihole_cfg_debug_vectors }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 16
+    }
+    pihole_cfg_debug_resolver: {
+      section: 'debug',
+      key: 'resolver',
+      raw: '{{ pihole_cfg_debug_resolver }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 17
+    }
+    _pihole_cfg_debug_edns0: {
+      section: 'debug',
+      key: 'ends0',
+      raw: '{{ pihole_cfg_debug_edns0 }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 18
+    }
+    _pihole_cfg_debug_clients: {
+      section: 'debug',
+      key: 'clients',
+      raw: '{{ pihole_cfg_debug_clients }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 19
+    }
+    _pihole_cfg_debug_aliasclients: {
+      section: 'debug',
+      key: 'aliasclients',
+      raw: '{{ pihole_cfg_debug_aliasclients }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 20
+    }
+    _pihole_cfg_debug_events: {
+      section: 'events',
+      key: 'aliasclients',
+      raw: '{{ pihole_cfg_debug_events }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 21
+    }
+    _pihole_cfg_debug_helper: {
+      section: 'events',
+      key: 'helper',
+      raw: '{{ pihole_cfg_debug_helper }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 22
+    }
+    _pihole_cfg_debug_config: {
+      section: 'config',
+      key: 'helper',
+      raw: '{{ pihole_cfg_debug_config }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 23
+    }
+    _pihole_cfg_debug_inotify: {
+      section: 'config',
+      key: 'inotify',
+      raw: '{{ pihole_cfg_debug_inotify }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 24
+    }
+    _pihole_cfg_debug_webserver: {
+      section: 'config',
+      key: 'webserver',
+      raw: '{{ pihole_cfg_debug_webserver }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 25
+    }
+    _pihole_cfg_debug_extra: {
+      section: 'config',
+      key: 'extra',
+      raw: '{{ pihole_cfg_debug_extra }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 26
+    }
+    _pihole_cfg_debug_reserved: {
+      section: 'config',
+      key: 'reserved',
+      raw: '{{ pihole_cfg_debug_reserved }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 27
+    }
+    _pihole_cfg_debug_ntp: {
+      section: 'config',
+      key: 'ntp',
+      raw: '{{ pihole_cfg_debug_ntp }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 28
+    }
+    _pihole_cfg_debug_netlink: {
+      section: 'config',
+      key: 'netlink',
+      raw: '{{ pihole_cfg_debug_netlink }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 29
+    }
+    _pihole_cfg_debug_all: {
+      section: 'config',
+      key: 'all',
+      raw: '{{ pihole_cfg_debug_all }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 30
+    }
+    _pihole_cfg_mgmt_domain_blocklists: {
+      section: 'api',
+      key: '',
+      raw: '{{ pihole_cfg_mgmt_domain_blocklists }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 1,
+    }
+    _pihole_cfg_mgmt_clients: {
+      section: 'api',
+      key: '',
+      raw: '{{ pihole_cfg_mgmt_clients }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 2,
+    }
+    _pihole_cfg_mgmt_groups: {
+      section: 'api',
+      key: '',
+      raw: '{{ pihole_cfg_mgmt_groups }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 3,
+    }
+    _pihole_cfg_mgmt_client_groups_blocklist: {
+      section: 'api',
+      key: '',
+      raw: '{{ pihole_cfg_mgmt_client_groups_blocklist }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 4,
+    }
+    _pihole_cfg_mgmt_domain_groups_blocklist: {
+      section: 'api',
+      key: '',
+      raw: '{{ pihole_cfg_mgmt_domain_groups_blocklist }}',
+      default: [],
+      hint: 'list of dict',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 5,
+    }
+
+- name: 'Annotate | generate config map'
+  ansible.builtin.set_fact:
+    _pihole_map: '{{
+        hostvars[inventory_hostname] | dict2items |
+        selectattr("key", "match", "_pihole_cfg_*")
+      }}'
+    _pihole_order:
+      - 'dns'
+      - 'dns.cache'
+      - 'dns.blocking'
+      - 'dns.specialDomains'
+      - 'dns.reply.host'
+      - 'dns.reply.blocking'
+      - 'dns.rateLimit'
+      - 'dhcp'
+      - 'ntp.ipv4'
+      - 'ntp.ipv6'
+      - 'ntp.sync'
+      - 'ntp.sync.rtc'
+      - 'resolver'
+      - 'database'
+      - 'database.network'
+      - 'webserver'
+      - 'webserver.session'
+      - 'webserver.tls'
+      - 'webserver.paths'
+      - 'webserver.interface'
+      - 'webserver.api'
+      - 'webserver.api.temp'
+      - 'files'
+      - 'files.log'
+      - 'misc'
+      - 'misc.check'
+      - 'debug'

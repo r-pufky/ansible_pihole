@@ -1,0 +1,272 @@
+---
+###############################################################################
+# DHCP (dhcp)
+###############################################################################
+
+# Enable DHCP server? Default: False.
+pihole_cfg_dhcp_active: false
+
+# DHCP address pool start.
+#
+# Values:
+#   {IPv4}: IPv4 address.
+#       '': Auto (default).
+#
+# Default: ''.
+pihole_cfg_dhcp_start: ''
+
+# DHCP address pool end.
+#
+# Values:
+#   {IPv4}: IPv4 address.
+#       '': Auto (default).
+#
+# Default: ''.
+pihole_cfg_dhcp_end: ''
+
+# DHCP router/gateway.
+#
+# Values:
+#   {IPv4}: IPv4 address.
+#       '': Auto (default).
+#
+# Default: ''.
+pihole_cfg_dhcp_router: ''
+
+# PiHole Netmask.
+#
+# For networks which receive DHCP service via a relay agent, we cannot
+# determine the netmask itself, so it should explicitly set. Otherwise PiHole
+# guesses based on class (A, B or C) of network address. Optional for directly
+# connected networks.
+#
+# Values:
+#   {MASK}: Netmask to use (255.255.255.0).
+#       '': Auto-discovery (default).
+#
+# Default: '' (auto-discovery).
+pihole_cfg_dhcp_netmask: ''
+
+# DHCP lease time.
+#
+# Values:
+#     {TIME}: TIME format lease time (default seconds). May use: m,h,d,w.
+#   infinite: Do not expire leases.
+#         '': IPv4=1h, IPv6=1d (default).
+#
+# Default: ''.
+pihole_cfg_dhcp_lease_time: ''
+
+# Enable IPv6 DHCP support? Default: False.
+pihole_cfg_dhcp_ipv6: false
+
+# Enable DHCPv4 Rapid Commit?
+#
+# Only enable if PiHole is the only DHCP server for the subnet.
+#
+# Default: False.
+#
+# Reference:
+# * https://datatracker.ietf.org/doc/html/rfc4039
+pihole_cfg_dhcp_rapid_commit: false
+
+# Advertise DNS server multiple times to clients?
+#
+# Some devices will add their own proprietary DNS servers to list of DNS
+# servers, which can cause issues with PiHole. This option will advertise
+# PiHole DNS server multiple times to clients, which should prevent this from
+# happening.
+#
+# Default: False.
+pihole_cfg_dhcp_multi_dns: false
+
+# Enable DHCP logging?
+#
+# This will log all relevant DHCP-related activity, including all options sent
+# to DHCP clients and tags used to determine them. Useful for debugging DHCP
+# issues. The generated output is saved to file specified by
+# pihole_cfg_files_dnsmasq.
+#
+# Default: False.
+pihole_cfg_dhcp_logging: false
+
+# Ignore unknown DHCP clients?
+#
+# Ignore all clients which are not explicitly configured through dhcp.hosts.
+#
+# This can be useful to prevent unauthorized clients from getting an IP address
+# from the DHCP server. This is NOT a security feature, as clients can still
+# assign themselves an IP address and use the network. It is merely a
+# convenience feature to prevent unknown clients from getting a valid IP
+# configuration assigned automatically.
+#
+# New clients must be configured manually in dhcp.hosts before they can use the
+# network with this feature enabled.
+#
+# Default: False.
+pihole_cfg_dhcp_ignore_unknown_clients: false
+
+# Static DHCP.
+#
+# This allows a machine with a particular hardware address to be always
+# allocated the same hostname, IP address and lease time or to specify static
+# DHCP leases.
+#
+# Addresses allocated like this are not constrained to be in the DHCP range
+# but they must be in the same subnet. For subnets which don't need a pool of
+# dynamically allocated addresses, you can set a one-address range above and
+# specify only static leases here.
+#
+# PiHole treats all settings as optional - be sure you know what you are doing.
+#
+# pihole_cfg_dhcp_hosts:
+#     list of dict - Per host DHCP custom parameters.
+#   - comment: str - Comment. Optional.
+#     hwaddr: str or list of str - MAC address.
+#         DHCPv4 allows multiple hardware addresses to one IP address. This
+#         allows PiHole to abandon a DHCP lease to one of the hardware
+#         addresses when another one asks for a lease. Beware that this is a
+#         DANGEROUS thing to do and only works reliably if only one of the
+#         hardware addresses is active at any time. There is NO WAY for dnsmasq
+#         to enforce this. Most cases should use LACP (802.1AX).
+#
+#         Commonly used for home configurations with laptops that have both
+#         wired/wireless interfaces and are not connected at the same time.
+#         Special Case:
+#           *: Match any hardware address.
+#     id: str - Client ID. Optional.
+#         Special Case:
+#            {MAC}: DUID IPv6 MAC hardware identifier.
+#           {DUID}: DUID IPv6 text client identifier.
+#                *: Match any Client ID (IPv6).
+#                *: Match only MAC addresses (IPv4).
+#     set: str or list of str - Sets tags for host. Optional.
+#         Used to selectively send DHCP options to matched host.
+#         Special Case:
+#                   known: When a host matches any directive (or one implied by
+#                          /etc/ethers) the special tag 'known' is set. This
+#                          allows PiHole to configure ignore requests from
+#                          unknown machines using a custom config option
+#                          'dhcp-ignore=tag:!known' in your own config file.
+#           known-othernet: When host matches only directives which cannot be
+#                           used because it specifies an address on different
+#                           subnet, the special tag 'known-othernet' is set.
+#     tag: str or list of str - Filters which directives are used. Optional.
+#         Multiple tag filters must all be matched. Tagged directives are used
+#         in preference to untagged ones.
+#         Special Case:
+#           * hwaddr, id, or hostname must be specified (wildcards allowed).
+#     ip: str or list of str - IP addresses. Optional.
+#         IPv4:
+#         * Only a single IPv4 address may be specified.
+#         IPv6:
+#         * Multiple IPv6 addresses allowed. Brackets required.
+#         * Addresses containing only host-identifier (e.g. [::56]) act as
+#           wildcards in DHCP ranges, with appropriate network parts inserted.
+#         * Prefixed address (e.g. [1234:50/126]) act as wildcards in DHCP
+#           ranges with appropriate network parts inserted. Enables assigning
+#           different address for each DUID. Typically occurs with chain
+#           netbooting, allowing each stage a different address.
+#     hostname: str - Hostname. Optional.
+#     lease: str - Lease time. Optional.
+#         Values:
+#             {TIME}: lease time (default seconds). May use: m,h,d,w.
+#           infinite: Do not expire leases.
+#                 '': IPv4=1h, IPv6=1d (default).
+#     ignore: bool - Ignore machine (never offer DHCP lease). Optional.
+#         Use for when another DHCP server is on the network that should be
+#         used for those matched machines.
+#
+# pihole_cfg_dhcp_hosts:
+#   - comment: 'laptop with wired/wireless'
+#     hwaddr:
+#       - '00:11:22:AA:BB:CC'
+#       - '00:11:22:AA:BB:DD'
+#     ip: '192.168.0.1'
+#     hostname: 'lappy'
+#     lease: '3600'
+#   - comment: 'Desktop'
+#     hwaddr: '00:11:22:AA:BB:EE'
+#     set:
+#       - 'vlan20'
+#       - 'desktop'
+#     ip:
+#       - '[::56]'
+#       - '[1234:80/126]'
+#     hostname: 'desky'
+#     lease: 'infinite'
+#   - comment: 'router'
+#     ip: '192.168.0.1'
+#     hwaddr: '00:11:22:AA:BB:FF'
+#     ignore: true
+#
+# Default: [].
+pihole_cfg_dhcp_hosts: []
+
+###############################################################################
+# NTP IPv4 (ntp.ipv4)
+###############################################################################
+
+# Enable IPv4 Network Time Protocol (NTP) server? Default: True.
+pihole_cfg_dhcp_ntp_ipv4_active: true
+
+# NTP IPv4 listen address.
+#
+# Values:
+#   {IPv4}: IPv4 address.
+#       '': All addresses (0.0.0.0) (default).
+#
+# Default: '' (all addresses).
+pihole_cfg_dhcp_ntp_ipv4_address: ''
+
+###############################################################################
+# NTP IPv6 (ntp.ipv6)
+###############################################################################
+
+# Enable IPv6 Network Time Protocol (NTP) server? Default: True.
+pihole_cfg_dhcp_ntp_ipv6_active: true
+
+# NTP IPv6 listen address.
+#
+# Values:
+#   {IPv6}: IPv6 address.
+#       '': All addresses (::) (default).
+#
+# Default: '' (all addresses).
+pihole_cfg_dhcp_ntp_ipv6_address: ''
+
+###############################################################################
+# NTP Sync (ntp.sync)
+###############################################################################
+
+# Enable upstream NTP time synchronization? Default: True.
+pihole_cfg_dhcp_ntp_sync_active: true
+
+# NTP upstream server.
+#
+# NTP server should be located as close as possible to you in order to minimize
+# time offset possibly introduced by different routing paths.
+#
+# Default: 'pool.ntp.org'.
+pihole_cfg_dhcp_ntp_sync_server: 'pool.ntp.org'
+
+# NTP synchronization interval (seconds). Default: 3600 (1 hour).
+pihole_cfg_dhcp_ntp_sync_interval: 3600
+
+# Number of NTP syncs to perform and average before updating system time.
+#
+# Default: 8.
+pihole_cfg_dhcp_ntp_sync_count: 8
+
+###############################################################################
+# NTP Sync RTC (ntp.sync.rtc)
+###############################################################################
+
+# Enable real-time clock (RTC) if available? Default: False.
+pihole_cfg_dhcp_ntp_sync_set: false
+
+# RTC device path to update. Default: '' (auto-discovery).
+pihole_cfg_dhcp_ntp_sync_device: ''
+
+# Set RTC to UTC? Default: True.
+pihole_cfg_dhcp_ntp_sync_utc: true

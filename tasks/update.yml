@@ -1,9 +1,0 @@
----
-###############################################################################
-# Pi-Hole Update
-###############################################################################
-# Update pihole using pihole update mechanism if enabled.
-
-- name: 'Update | updating pihole installation'  # noqa no-changed-when
-  ansible.builtin.command: "pihole updatePihole"
-  when: pihole_update_enable

@@ -1,0 +1,87 @@
+---
+###############################################################################
+# PiHole Role Options
+###############################################################################
+#
+# Updates:
+# * Hard branch Debian OS releases before starting (e.g. 13.0.0 branch).
+# * Keep a separate change log as changes are made, you will not remember.
+# * Create a default install with the latest package:
+#   * pihole -v → displays installed versions.
+#   * Update role defaults (includes updating defaults, tasks)
+#   * Use defaults/ to remove any changed/deprecated variables.
+# * Update tests for any changes.
+# * Standard role validation testing: yamllint, ansible-lint, todo, noqa.
+# * Tag with OS-TOML-ROLE version.
+#
+# Reference:
+# * https://github.com/pi-hole/pi-hole
+
+# Last time PiHole options were validated against a default configuration.
+pihole_role_validate_date: '2025-09-08'
+pihole_role_validate_release: 'trixie'
+pihole_role_validate_version: 'v6.1.4'
+pihole_role_validate_web_version: 'v6.2.1'
+pihole_role_validate_toml_version: 'v6.2.3'
+
+pihole_role_etc_dir: '/etc/pihole'
+pihole_role_install_dir: '/opt/pihole'
+pihole_role_toml_file: '{{ pihole_role_etc_dir ~ "/pihole.toml" }}'
+
+pihole_role_packages:
+  - 'qrencode'  # TOTP QR codes.
+  - 'git'  # BALLOON-SHA256 password hashes.
+
+###############################################################################
+# Balloon-hashing Options
+###############################################################################
+# Use python3 package to generate valid balloon-sha256 hashes.
+#
+# Keys are currently published without user ID's, which makes verification
+# impossible.
+#
+# PiHole uses BALLOON-SHA256 password hashing:
+# * 128bit salt.
+# * Version (v) 1.
+# * Space cost (s) 1024.
+# * Time cost (t) 32.
+#
+# Reference
+# * https://github.com/nachonavarro/balloon-hashing/issues/16
+# * https://github.com/nachonavarro/balloon-hashing
+# * https://en.wikipedia.org/wiki/Balloon_hashing
+# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c#L727
+
+pihole_role_balloon_root: '/opt/balloon-hashing'
+pihole_role_git_repo: 'https://github.com/nachonavarro/balloon-hashing'
+pihole_role_git_gpg_signing_keys: ['968479A1AFF927E37D1A566BB5690EEEBB952194']
+pihole_role_hash_space: 1024
+pihole_role_hash_time: 32
+pihole_role_hash_version: 1
+
+###############################################################################
+# Default PiHole User/Group
+###############################################################################
+# Create a more locked down pihole user than install script uses.
+#
+# Changes:
+# * UID: 123 (default: 997).
+# * GID: 123 (default: auto).
+# * home: /nonexistent (default: /home/pihole).
+
+pihole_role_group:
+  name: 'pihole'
+  gid: 123
+
+pihole_role_user:
+  name: 'pihole'
+  group: 'pihole'
+  uid: 123
+  shell: '/usr/sbin/nologin'
+  home: '/nonexistent'
+  create_home: false
+  password: '!'
+  password_lock: true
+  update_password: 'always'
+  expires: -1
+  system: true

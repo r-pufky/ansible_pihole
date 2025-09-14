@@ -1,7 +1,0 @@
----
-skip_list:
-  - package-latest # allow 'latest' packages.
-warn_list:
-  - experimental
-exclude_paths:
-  - .github/workflows/

@@ -1,0 +1,65 @@
+---
+###############################################################################
+# Default
+###############################################################################
+# PiHole service runs with static password hashes, using a TOTP seed value.
+#
+# Passwords must be distinct hashes for PiHole to differentiate.
+#
+# Test hashes are well known with random seeds:
+# * web: test.
+# * app: test2.
+#
+# Tests:
+# * /etc/pihole/pihole.toml.broken does NOT exist.
+# * Hashed web password works.
+# * Hashed app password works.
+# * TOTP with seed works.
+
+dependency:
+  name: 'galaxy'
+driver:
+  name: 'podman'
+provisioner:
+  name: 'ansible'
+  config_options:
+    defaults:
+      interpreter_python: 'auto_silent'
+      callback_whitelist: 'profile_tasks, timer, yaml'
+    ssh_connection:
+      pipelining: false
+  inventory:
+    group_vars:
+      all:
+        # Hashes are unsafe and defined in converge.
+        pihole_cfg_webserver_api_totp_secret:
+          'abcdefghijklmnopqrst'
+        pihole_srv_api_config_enable: false
+platforms:
+  - name: 'pihole-debian-13-pwhash_totp_seed'
+    image: 'ghcr.io/hifis-net/debian-systemd:13'
+    systemd: 'always'
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
+    command: '/lib/systemd/systemd'
+    pre_build_image: true
+verifier:
+  name: 'ansible'
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+scenario:
+  test_sequence:
+    # - 'dependency'
+    # - 'cleanup'
+    - 'destroy'
+    - 'syntax'
+    - 'create'
+    - 'prepare'
+    - 'converge'
+    # - 'idempotence'  # services always restarted.
+    # - 'side_effect'
+    - 'verify'
+    # - 'cleanup'
+    - 'destroy'

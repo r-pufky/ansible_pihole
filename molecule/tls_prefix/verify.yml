@@ -35,14 +35,3 @@
         test_group: '123'
         test_mode: '0644'
         test_diff: true
-
-    - name: 'Verify | REST API auth OK'
-      ansible.builtin.uri:
-        url: 'https://localhost:443/api/auth'
-        method: 'POST'
-        status_code: [200]
-        body:
-          password: 'test2'
-        body_format: 'json'
-        validate_certs: false
-      register: _pihole_api
