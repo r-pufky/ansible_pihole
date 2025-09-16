@@ -33,8 +33,6 @@ changes are completed.
 
 group_vars/pihole/vars/pihole.yml
 ``` yaml
-pihole_webpassword: '{{ vault_pihole_webpassword }}'
-
 pihole_cfg_mgmt_lists:
   - address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
     type: 'block'

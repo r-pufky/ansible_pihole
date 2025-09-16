@@ -1,6 +1,6 @@
 ---
 ###############################################################################
-# Default
+# Backup
 ###############################################################################
 # Pre/Post backup configurations are made and copied correctly. An initial
 # PiHole install is made during prepare; as ALL backups are disabled on first

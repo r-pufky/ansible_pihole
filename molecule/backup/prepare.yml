@@ -39,6 +39,19 @@
         test_dest: 'balloon'
         test_repo: 'https://github.com/nachonavarro/balloon-hashing'
 
+    - name: 'Prepare | cleanup balloon'
+      ansible.builtin.file:
+        path: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/balloon/" ~ item
+          }}'
+        state: 'absent'
+      loop:
+        - '.coveragerc'
+        - '.git'
+        - '.github'
+        - '.gitignore'
+
 - name: 'Prepare'
   hosts: 'all'
   gather_facts: true  # ansible_date_time.

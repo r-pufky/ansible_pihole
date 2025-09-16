@@ -1,6 +1,6 @@
 ---
 ###############################################################################
-# API Teleporter
+# Backup
 ###############################################################################
 # Backup completed configuration to ansible controller. Run independently of
 # other API commands and must auth before attempting backup.
@@ -52,3 +52,8 @@
     src: '{{ _pihole_backup_dest }}'
     dest: '{{ _pihole_srv_backup_dest.raw }}'
     flat: true
+
+- name: 'API | backup | cleanup'
+  ansible.builtin.file:
+    path: '{{ _pihole_backup_dest }}'
+    state: 'absent'
