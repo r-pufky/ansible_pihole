@@ -170,6 +170,8 @@ pihole_cfg_webserver_session_restore: true
 
 # Webserver TLS certificate.
 #
+# PiHole automatically generates a self-signed certificate if non-existent.
+#
 # Values:
 #       '': Use currently installed certificate (/etc/pihole/tls.pem).
 #   {CERT}: Use PEM format certificate sourced from ansible controller. It must
@@ -245,29 +247,7 @@ pihole_cfg_webserver_api_max_sessions: 16
 # Enable prettfied (human-readable) JSON API output? Default: False.
 pihole_cfg_webserver_api_pretty_json: false
 
-# Webserver password.
-#
-# Special Case:
-# * pihole_srv_balloon_enable=true will automatically generate a BALLOON-SHA256
-#   hash from provided password.
-#
-# Values:
-#   {PASS}: Password. BALLOON-SHA256 hash automatically generated. Recommended.
-#           Requires pihole_srv_balloon_enable=true.
-#   {HASH}: Requires '!unsafe'. BALLOON-SHA256 password hash from 'api_pwhash'.
-#           PiHole uses BALLOON-SHA256 password hashing:
-#           * 128bit salt.
-#           * Version (v) 1.
-#           * Space cost (s) 1024.
-#           * Time cost (t) 32.
-#
-#           pihole_cfg_webserver_api_pwhash: !unsafe '$BALLOON-SHA256...'
-#
-# Default: '{RANDOM}' (randomly generated).
-#
-# Reference
-# * https://en.wikipedia.org/wiki/Balloon_hashing
-# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c
+# Webserver password. Default: '{RANDOM}' (randomly generated).
 pihole_cfg_webserver_api_pwhash: '{{
     lookup("ansible.builtin.password",
            "/dev/null",
@@ -299,42 +279,14 @@ pihole_cfg_webserver_api_totp_secret: ''
 #
 # Requires pihole_cfg_webserver_api_totp_secret set.
 #
-# An app password is randomly generated password that can be used instead of
-# regular password + TOTP token when signing in; for services that don't
-# support two-step verification.
+# Application password is used for REST API calls.
 #
 # Special Case:
-# * pihole_srv_balloon_enable=true will automatically generate a BALLOON-SHA256
-#   hash from provided password.
 # * API calls will prompt for 2FA token if needed when no application password
 #   is set.
 # * PiHole creates a 44 character app password - this is not a hard limit.
 #
-# Values:
-#   {PASS}: Password. BALLOON-SHA256 hash automatically generated. Recommended.
-#           Requires pihole_srv_balloon_enable=true.
-#   {HASH}: Requires '!unsafe'. BALLOON-SHA256 password hash from
-#           'api_app_pwhash'.
-#
-#             Settings → Web interface / API → Expert
-#               Advanced Settings → Configure app password
-#
-#             * pihole_srv_app_pass: generated password in UI.
-#             * pihole_cfg_webserver_api_app_pwhash: pihole.toml - app_pwhash.
-#
-#           PiHole uses BALLOON-SHA256 password hashing:
-#           * 128bit salt.
-#           * Version (v) 1.
-#           * Space cost (s) 1024.
-#           * Time cost (t) 32.
-#
-#           pihole_cfg_webserver_api_app_pwhash: !unsafe '$BALLOON-SHA256...'
-#
 # Default: '{RANDOM}' (randomly generated).
-#
-# Reference
-# * https://en.wikipedia.org/wiki/Balloon_hashing
-# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c
 pihole_cfg_webserver_api_app_pwhash: '{{
     lookup("ansible.builtin.password",
            "/dev/null",

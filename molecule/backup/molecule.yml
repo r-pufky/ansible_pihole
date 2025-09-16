@@ -2,12 +2,13 @@
 ###############################################################################
 # Default
 ###############################################################################
-# Default options start service correctly, with REST API login validated.
+# Pre/Post backup configurations are made and copied correctly. An initial
+# PiHole install is made during prepare; as ALL backups are disabled on first
+# install.
 #
 # Tests:
-# * All default options (unset defaults set with options) set.
-# * Raw web password works with balloon hashing.
-# * Raw app password works with balloon hashing.
+# * Pre-backup is made and copied.
+# * Post-backup is made and copied.
 
 dependency:
   name: 'galaxy'
@@ -24,6 +25,13 @@ provisioner:
   inventory:
     group_vars:
       all:
+        pihole_srv_backup_pre_enable: true
+        pihole_srv_backup_post_enable: true
+        pihole_srv_backup_failures_enable: true
+        pihole_srv_backup_dest: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/backup"
+          }}'
         pihole_cfg_webserver_api_pwhash: 'test'
         pihole_cfg_webserver_api_totp_secret:
           'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
@@ -31,7 +39,7 @@ provisioner:
         pihole_cfg_debug_api: true
         pihole_srv_api_config_enable: true
 platforms:
-  - name: 'pihole-debian-13-default'
+  - name: 'pihole-debian-13-backup'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:

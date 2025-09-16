@@ -1,0 +1,22 @@
+---
+- name: 'Converge (local)'
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: 'Converge | clear local backups'
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: 'absent'
+      with_fileglob: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/backup/*"
+          }}'
+
+- name: 'Converge'
+  hosts: 'all'
+  gather_facts: true  # ansible_date_time.
+  tasks:
+    - name: 'Converge | apply r_pufky.srv.pihole (test)'
+      ansible.builtin.include_role:
+        name: 'r_pufky.srv.pihole'

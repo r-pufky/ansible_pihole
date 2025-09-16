@@ -18,7 +18,7 @@
 # * https://github.com/pi-hole/pi-hole
 
 # Last time PiHole options were validated against a default configuration.
-pihole_role_validate_date: '2025-09-08'
+pihole_role_validate_date: '2025-09-16'
 pihole_role_validate_release: 'trixie'
 pihole_role_validate_version: 'v6.1.4'
 pihole_role_validate_web_version: 'v6.2.1'
@@ -40,17 +40,15 @@ pihole_role_packages:
 # Keys are currently published without user ID's, which makes verification
 # impossible.
 #
-# PiHole uses BALLOON-SHA256 password hashing:
+# PiHole uses custom BALLOON-SHA256 password hashing:
 # * 128bit salt.
 # * Version (v) 1.
 # * Space cost (s) 1024.
 # * Time cost (t) 32.
 #
 # Reference
-# * https://github.com/nachonavarro/balloon-hashing/issues/16
-# * https://github.com/nachonavarro/balloon-hashing
 # * https://en.wikipedia.org/wiki/Balloon_hashing
-# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c#L727
+# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c
 
 pihole_role_balloon_root: '/opt/balloon-hashing'
 pihole_role_git_repo: 'https://github.com/nachonavarro/balloon-hashing'

@@ -71,7 +71,6 @@
         test_role: 'r_pufky.srv.pihole'
         test_fail_message:
           'pihole_cfg_webserver_api_pwhash did not trigger assertion.'
-        pihole_srv_balloon_enable: false
         pihole_cfg_webserver_api_pwhash: 'test'
 
     - name: 'Converge | assert TOTP hash requirements'
@@ -106,7 +105,6 @@
         test_role: 'r_pufky.srv.pihole'
         test_fail_message:
           'pihole_cfg_webserver_api_totp_secret did not trigger assertion.'
-        pihole_srv_balloon_enable: false
         pihole_cfg_webserver_api_pwhash: 'test'
 
     - name: 'Converge | assert extra logging requirements'
@@ -162,6 +160,22 @@
           'pihole_cfg_webserver_api_pwhash did not trigger assertion.'
         pihole_srv_api_config_enable: true
         pihole_srv_api: ''
+        pihole_cfg_webserver_api_pwhash: 'test'
+        pihole_cfg_webserver_api_totp_secret:
+          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
+        pihole_cfg_webserver_api_app_pwhash: 'test'
+
+    - name: 'Converge | assert REST API cert validation requirements'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'assertions.yml'
+      vars:
+        test_name: 'Converge | assert REST API cert validation requirements'
+        test_role: 'r_pufky.srv.pihole'
+        test_fail_message:
+          'pihole_srv_api_validate_enable did not trigger assertion.'
+        pihole_srv_api_config_enable: true
+        pihole_srv_api_validate_enable: true
         pihole_cfg_webserver_api_pwhash: 'test'
         pihole_cfg_webserver_api_totp_secret:
           'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'

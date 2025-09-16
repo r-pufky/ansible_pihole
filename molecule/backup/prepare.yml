@@ -11,6 +11,15 @@
       vars:
         test_name: 'Prepare cache'
 
+    - name: 'Prep | stage backup cache'
+      ansible.builtin.file:
+        path: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/backup"
+          }}'
+        mode: '0755'
+        state: 'directory'
+
     - name: 'Prepare | check basic-install.sh'
       ansible.builtin.include_role:
         name: 'r_pufky.lib.tests'
@@ -32,7 +41,7 @@
 
 - name: 'Prepare'
   hosts: 'all'
-  gather_facts: false
+  gather_facts: true  # ansible_date_time.
   tasks:
     - name: 'Prepare | install rsync'
       ansible.builtin.apt:
@@ -63,3 +72,7 @@
         recursive: true
         archive: false
         checksum: true
+
+    - name: 'Prep | apply r_pufky.srv.pihole (initial)'
+      ansible.builtin.include_role:
+        name: 'r_pufky.srv.pihole'

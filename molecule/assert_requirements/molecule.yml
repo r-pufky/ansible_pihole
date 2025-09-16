@@ -2,7 +2,7 @@
 ###############################################################################
 # Assert Requirements
 ###############################################################################
-# Verify assertion logic correctly prevent role from executing.
+# Verify assertion logic correctly prevents role from executing.
 #
 # Tests:
 # * Test all assertions are triggered correctly.

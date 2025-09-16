@@ -1,9 +1,12 @@
 ---
 ###############################################################################
-# Configure
+# API Auth
 ###############################################################################
-# Update passwords using pihole binary to make password hashing future safe.
-# Generate random password if no password is set.
+# Authenticate session to PiHole REST API.
+#
+# Generates:
+#   _pihole.token: str - validated auth token.
+#   _pihole.csrf: str - CSRF session token.
 
 - name: 'API | auth | 2FA token'
   when: _pihole_cfg_webserver_api_app_pwhash.raw | length == 0
@@ -19,7 +22,6 @@
           │ Enter token below (no time limit).
 
     - name: 'API | auth | 2FA token | read token'
-      when: _pihole_cfg_webserver_api_app_pwhash.raw | length == 0
       ansible.builtin.pause:
         echo: true
       register: _pihole_totp
@@ -36,10 +38,10 @@
                 "totp": {{ _pihole_totp.user_input | int }}
               }'
             body_format: 'json'
-            validate_certs: false
+            validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
           register: _pihole_api
 
-    - name: 'Config | cache token'
+    - name: 'API | auth | cache token'
       ansible.builtin.set_fact:
         _pihole: '{{
             _pihole |
@@ -47,15 +49,15 @@
                      "csrf": _pihole_api.json.session.csrf})
           }}'
   rescue:
-    - name: 'Config | WARNING ⚠'
+    - name: 'API | auth | FAILED ⚠'
       ansible.builtin.fail:
         msg: |
           ╭───────────────────────────────────────────────────────────────────╮
           │                                                                   │
           │                    API Authentication failed.                     │
           │                                                                   │
-          ├───────────────────────────────────────────────────────────────────╯
-          │ {{ _pihole.status_code }}: {{ _pihole_api.msg }}
+          ╰───────────────────────────────────────────────────────────────────╯
+          {{ _pihole.status_code }}: {{ _pihole_api.msg }}
 
 - name: 'API | auth | create session'
   when: _pihole_cfg_webserver_api_app_pwhash.raw | length > 0
@@ -68,10 +70,10 @@
         body:
           password: '{{ _pihole_cfg_webserver_api_app_pwhash.raw }}'
         body_format: 'json'
-        validate_certs: false
+        validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
       register: _pihole_api
 
-    - name: 'Config | cache token'
+    - name: 'API | auth | cache tokens'
       ansible.builtin.set_fact:
         _pihole: '{{
             _pihole |
@@ -79,12 +81,12 @@
                      "csrf": _pihole_api.json.session.csrf})
           }}'
   rescue:
-    - name: 'Config | WARNING ⚠'
+    - name: 'API | auth | FAILED ⚠'
       ansible.builtin.fail:
         msg: |
           ╭───────────────────────────────────────────────────────────────────╮
           │                                                                   │
           │                    API Authentication failed.                     │
           │                                                                   │
-          ├───────────────────────────────────────────────────────────────────╯
-          │ {{ _pihole.status_code }}: {{ _pihole_api.msg }}
+          ╰───────────────────────────────────────────────────────────────────╯
+          {{ _pihole.status_code }}: {{ _pihole_api.msg }}

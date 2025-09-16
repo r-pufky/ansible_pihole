@@ -1,0 +1,29 @@
+---
+- name: 'Verify'
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: 'Verify | query backups'
+      ansible.builtin.find:
+        path: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/backup"
+          }}'
+        file_type: 'file'
+      register: _pihole_test
+
+    - name: 'Verify | assert backups'
+      ansible.builtin.assert:
+        quiet: true
+        that: _pihole_test.files | length == 2
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                       Backup count invalid.                       │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ There should only be a pre and post backup.
+          │
+          │ Count: {{ _pihole_test.files | length }}
+          │ Files: {{ _pihole_test.files | map(attribute='path') | list }}

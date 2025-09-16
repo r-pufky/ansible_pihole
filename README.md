@@ -1,25 +1,10 @@
-:warning:
-
-Migration to ansible 2.18.x in progress. There will be substantial changes to
-the role comply with new Galaxy and Collection requirements.
-
-[3.x](https://github.com/r-pufky/ansible_pihole/tree/3.x) is the last version
-pre ansible 2.18. Anyone wishing to use the old version and supported platforms
-should use this branch. **3.x** will **no longer** be actively maintained.
-
-* Open issues will be addressed during migration or resolved if no longer
-  relevant.
-* Experimentally supported OS's will be removed due to lack of contributions.
-* Testing standardized with implementations used across all other existing
-  roles/collections.
-* Documentation standardized and updated.
-* Jump to latest PiHole version.
-
 # Pi-Hole
 Pi-Hole installation from public release.
 
 ## Requirements
 Pi-Hole hosts should be configured with static IP's per Pi-Hole documentation.
+
+Known Issue: [list deletion via API is currently broken](https://github.com/r-pufky/ansible_pihole/issues/49).
 
 [supported platforms](https://github.com/r-pufky/ansible_pihole/blob/main/meta/main.yml)
 
@@ -36,43 +21,40 @@ All ports and protocols have been defined for the role.
 [r_pufky.srv](https://github.com/r-pufky/ansible_collection_srv) collection.
 
 ## Example Playbook
-Read defaults documentation.
+Read defaults documentation. All settings not set in `pihole.toml` are
+configured via PiHole's REST API when enabled.
 
 For multiple Pi-Hole nodes apply configuration in group_vars and node specific
 settings in host_vars. Singleton instances can be applied in host_vars.
 
 Configure dual PiHole DNS servers with TOTP, REST API enable; with custom ad
-and domain blocklists.
+and domain blocklists; backing up configurations with teleporter after all
+changes are completed.
 
 group_vars/pihole/vars/pihole.yml
 ``` yaml
 pihole_webpassword: '{{ vault_pihole_webpassword }}'
 
-pihole_cfg_mgmt_ad_sources:
-  - id: 1
-    address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
-    enabled: true
+pihole_cfg_mgmt_lists:
+  - address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+    type: 'block'
     comment: 'Migrated from /etc/pihole/adlists.list'
-  - id: 2
-    address: 'https://adaway.org/hosts.txt'
+    groups: ['Default']
     enabled: true
-    comment: 'ansible adlist'
-  - id: 3
-    address: 'https://bitbucket.org/ethanr/dns-blacklists/raw/8575c9f96e5b4a1308f2f12394abd86d0927a4a0/bad_lists/Mandiant_APT1_Report_Appendix_D.txt'
-    enabled: true
-    comment: 'ansible adlist'
 
-pihole_cfg_mgmt_domain_blocklists:
-  - id: 1
-    type: 1
-    domain: 'choice.microsoft.com'
-    enabled: true
+pihole_cfg_mgmt_domains:
+  - domain: 'choice.microsoft.com'
+    type: 'deny'
+    kind: 'exact'
     comment: 'ansible blacklist'
-  - id: 2
-    type: 1
-    domain: 'events.gfe.nvidia.com'
+    groups: ['Default']
     enabled: true
+  - domain: 'events.gfe.nvidia.com'
+    type: 'deny'
+    kind: 'exact'
     comment: 'ansible blacklist'
+    groups: ['Default']
+    enabled: true
 ```
 
 host_vars/pihole.example.com/vars/pihole.yml
@@ -105,9 +87,9 @@ site.yml
      - 'r_pufky.srv.pihole'
   vars:
     pihole_cfg_webserver_api_pwhash: 'test'
-    pihole_cfg_webserver_api_totp_secret:
-      'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'  # Well known TOTP example secret.
+    pihole_cfg_webserver_api_totp_secret: 'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
     pihole_cfg_webserver_api_app_pwhash: 'rest_api_test'
+    pihole_srv_backup_post_enable: true
 ```
 If multiple pihole servers are configured, it is highly recommended to use
 `serial: 1`. This will apply changes to pihole server individually allowing for

@@ -1,0 +1,19 @@
+---
+###############################################################################
+# Update
+###############################################################################
+
+- name: 'Update | gravity'
+  when: _pihole_srv_gravity_update_enable.raw
+  ansible.builtin.shell: 'pihole -g'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
+
+- name: 'Update | post-backup'
+  when: >
+    _pihole_srv_api_config_enable.raw and
+    _pihole_srv_backup_post_enable.raw
+  ansible.builtin.include_tasks: 'api/backup.yml'
+  vars:
+    label: 'post'

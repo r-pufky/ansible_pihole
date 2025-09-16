@@ -1,0 +1,54 @@
+---
+###############################################################################
+# API Teleporter
+###############################################################################
+# Backup completed configuration to ansible controller. Run independently of
+# other API commands and must auth before attempting backup.
+#
+# Capture status codes for handling backup failures.
+#
+# Args:
+#   label: str - pre/post filename label.
+#
+# Reference:
+# * https://ftl.pi-hole.net/master/docs/#get-/teleporter
+
+- name: 'API | backup | auth'
+  ansible.builtin.include_tasks: 'api/auth.yml'
+
+- name: 'API | backup | filename'
+  ansible.builtin.set_fact:
+    _pihole_backup_dest:
+      '{{ "/tmp/" ~ ansible_date_time.iso8601 ~ "-" ~ label ~ ".zip" }}'
+
+- name: 'API | backup | run'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/teleporter" }}'
+    dest: '{{ _pihole_backup_dest }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0640'
+    method: 'GET'
+    status_code: [200, 401]
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  register: _pihole_api
+
+- name: 'API | backup | check status'
+  when: _pihole_api.status == 401 and _pihole_srv_backup_failures_enable.raw
+  ansible.builtin.fail:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                          Backup failed.                           │
+      │                                                                   │
+      ╰───────────────────────────────────────────────────────────────────╯
+      {{ _pihole_api.msg }}
+
+- name: 'API | backup | retrieve {{ _pihole_backup_dest }}'
+  ansible.builtin.fetch:
+    src: '{{ _pihole_backup_dest }}'
+    dest: '{{ _pihole_srv_backup_dest.raw }}'
+    flat: true

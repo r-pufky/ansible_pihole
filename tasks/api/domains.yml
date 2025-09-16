@@ -1,0 +1,67 @@
+---
+###############################################################################
+# API Domains
+###############################################################################
+# Manage PiHole domains via REST API.
+#
+# Domains are tracked by type, kind, domain; which makes differential tracking
+# between role applications excessively complicated.
+#
+# Instead, query for all existing domains, remove, then create new domains
+# provided by the user.
+#
+# Reference:
+# * https://ftl.pi-hole.net/master/docs/#post-/domains/-type-/-kind-
+
+- name: 'API | domains | query all'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/domains" }}'
+    method: 'GET'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  register: _pihole_api
+
+- name: 'API | domains | parse domain IDs'
+  ansible.builtin.set_fact:
+    _pihole_domains_id: '{{ _pihole_api.json.domains }}'
+
+- name: 'API | domains | remove'
+  ansible.builtin.uri:
+    url: '{{
+        _pihole_srv_api.raw ~ "/domains/" ~
+        item.type ~ "/" ~ item.kind ~ "/" ~ item.domain | urlencode
+      }}'
+    method: 'DELETE'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [204]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  loop: '{{ _pihole_domains_id }}'
+  loop_control:
+    label: '{{ item.domain }}'
+
+- name: 'API | domains | add managed domain'
+  ansible.builtin.uri:
+    url: '{{
+        _pihole_srv_api.raw ~ "/domains/" ~ item.type ~ "/" ~ item.kind |
+        urlencode
+      }}'
+    method: 'POST'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [201]
+    body:
+      domain: '{{ item.domain }}'
+      comment: '{{ item.comment }}'
+      groups: '{{ item.groups | map("extract", _pihole.groups) | list }}'
+      enabled: '{{ item.enabled }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  loop: '{{ _pihole_cfg_mgmt_domains.raw }}'
+  loop_control:
+    label: '{{ item.domain }}'

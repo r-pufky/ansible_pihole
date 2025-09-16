@@ -24,47 +24,22 @@
 # Default: 'v6.2.3'.
 pihole_srv_version: 'v6.2.3'
 
-# Apply PiHole updates?
-#
-# Minor updates are usually safe. Major versions are not. Applied before REST
-# API configuration changes occur.
-#
-# Default: True.
+# Apply PiHole updates? Default: True.
 #
 # Reference:
 # * https://docs.pi-hole.net/main/update
 pihole_srv_update_enable: true
 
-# Enable BALLOON-SHA256 support?
+# Apply Gravity updates?
 #
-# Highly recommended.
-#
-# Automatically generate $BALLOON-SHA256 hashes for provided passwords instead
-# of relying manual generation with existing PiHole install.
+# pihole_cfg_mgmt_lists changes require gravity updates to be populated. Run
+# after all configuration is complete.
 #
 # Default: True.
-pihole_srv_balloon_enable: true
-
-# PiHole REST API endpoint to use for service configuration.
 #
-# Default: 'https://localhost:443/api'
-pihole_srv_api: 'https://localhost:443/api'
-
-# Enable REST API configuration?
-#
-# Requires:
-# * pihole_srv_api set.
-# * pihole_cfg_webserver_api_totp_secret set.
-# * pihole_cfg_webserver_api_app_pwhash or pihole_cfg_webserver_api_pwhash set.
-#
-# Disabling will skip all tasks which require REST API use (piholt_cfg_mgmt_*).
-#
-# Default: True.
-pihole_srv_api_config_enable: true
-
-###############################################################################
-# Authentication
-###############################################################################
+# Reference:
+# * https://docs.pi-hole.net/main/update
+pihole_srv_gravity_update_enable: true
 
 # Display 2FA TOTP QR code?
 #
@@ -74,6 +49,36 @@ pihole_srv_api_config_enable: true
 #
 # Default: True.
 pihole_srv_totp_display_enable: true
+
+###############################################################################
+# REST API
+###############################################################################
+
+# PiHole API endpoint to use for service configuration.
+#
+# Default: 'https://localhost:443/api'
+pihole_srv_api: 'https://localhost:443/api'
+
+# Enable API configuration?
+#
+# Requires:
+# * pihole_srv_api set.
+# * pihole_cfg_webserver_api_totp_secret set.
+# * pihole_cfg_webserver_api_app_pwhash or pihole_cfg_webserver_api_pwhash set.
+#
+# Disabling will skip all tasks which require REST API use.
+#
+# Default: True.
+pihole_srv_api_config_enable: true
+
+# Enable API certificate validation?
+#
+# Requires pihole_cfg_webserver_tls_cert set.
+#
+# PiHole generates self-signed TLS/SSL certificates which do not validate.
+#
+# Default: False.
+pihole_srv_api_validate_enable: false
 
 ###############################################################################
 # User

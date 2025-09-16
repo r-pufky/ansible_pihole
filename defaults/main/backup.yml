@@ -1,0 +1,38 @@
+---
+###############################################################################
+# Backup Options
+###############################################################################
+# Backups are provided via REST API through Teleporter.
+#
+# Requires pihole_srv_api_config_enable=true.
+
+# Attempt backup before applying role changes?
+#
+# Special Case:
+# * Pre-backup will not run for new installs even if enabled.
+# * Run before system changes occur; requires pre-existing setup.
+# * Contents are NOT encrypted.
+# * ISO8601 naming - YYYY-MM-DDTHH:MM:SSZ-pre.zip
+#
+# Default: False.
+pihole_srv_backup_pre_enable: false
+
+# Attempt backup after applying role changes?
+#
+# Special Case:
+# * Run after all configuration is complete.
+# * Contents are NOT encrypted.
+# * ISO8601 naming - YYYY-MM-DDTHH:MM:SSZ-post.zip
+#
+# Default: False.
+pihole_srv_backup_post_enable: false
+
+# Enable fatal backup failures? Default: True.
+pihole_srv_backup_failures_enable: true
+
+# Ansible controller save location.
+#
+# Relative paths are anchored to playbook.
+#
+# Default: 'group_vars/pihole/data'.
+pihole_srv_backup_dest: 'group_vars/pihole/data'

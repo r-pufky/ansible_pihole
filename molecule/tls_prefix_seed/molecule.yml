@@ -1,19 +1,12 @@
 ---
 ###############################################################################
-# Default
+# TLS / Prefix
 ###############################################################################
-# PiHole service runs with static password hashes, using a TOTP seed value.
-#
-# Passwords must be distinct hashes for PiHole to differentiate.
-#
-# Test hashes are well known with random seeds:
-# * web: test.
-# * app: test2.
+# Custom TLS certificate is loaded correctly; ensure address prefix renders.
 #
 # Tests:
-# * /etc/pihole/pihole.toml.broken does NOT exist.
-# * Hashed web password works.
-# * Hashed app password works.
+# * /etc/pihole/pihole.pem is set correctly.
+# * pihole_cfg_webserver_paths_prefix is set correctly.
 # * TOTP with seed works.
 
 dependency:
@@ -31,12 +24,17 @@ provisioner:
   inventory:
     group_vars:
       all:
-        # Hashes are unsafe and defined in converge.
-        pihole_cfg_webserver_api_totp_secret:
-          'abcdefghijklmnopqrst'
+        pihole_cfg_webserver_tls_cert: '{{
+                lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+                "/molecule/cache/pihole_test.pem"
+              }}'
+        pihole_cfg_webserver_paths_prefix: '/pihole'
+        pihole_cfg_webserver_api_pwhash: 'test'
+        pihole_cfg_webserver_api_totp_secret: 'abcdefghijklmnopqrst'
+        pihole_cfg_webserver_api_app_pwhash: 'test2'
         pihole_srv_api_config_enable: false
 platforms:
-  - name: 'pihole-debian-13-pwhash_totp_seed'
+  - name: 'pihole-debian-13-tls_prefix'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:

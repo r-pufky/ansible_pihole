@@ -1,0 +1,8 @@
+---
+- name: 'Converge'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Converge | apply r_pufky.srv.pihole'
+      ansible.builtin.include_role:
+        name: 'r_pufky.srv.pihole'

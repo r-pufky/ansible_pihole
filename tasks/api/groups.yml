@@ -1,0 +1,119 @@
+---
+###############################################################################
+# API Groups
+###############################################################################
+# Manage PiHole groups via REST API.
+#
+# Determine which groups to delete from PiHole; and calculate newly added
+# groups vs. pre-existing groups for updates.
+#
+# Once all modifications are done, query final group state for further API
+# processing.
+#
+# Generates:
+#   _pihole.groups: dict - Group name to group ID mapping from API.
+#
+# Reference:
+# * https://ftl.pi-hole.net/master/docs/#post-/groups
+
+- name: 'API | groups | query all'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/groups" }}'
+    method: 'GET'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  register: _pihole_api
+
+- name: 'API | groups | parse added, deleted groups'
+  ansible.builtin.set_fact:
+    _pihole_groups_del: '{{
+        _pihole_api.json.groups | map(attribute="name") | list |
+        difference(_pihole_cfg_mgmt_groups.role_groups)
+      }}'
+    _pihole_groups_add: '{{
+        _pihole_cfg_mgmt_groups.role_groups |
+        difference(_pihole_api.json.groups | map(attribute="name") | list)
+      }}'
+
+- name: 'API | groups | parse modified groups'
+  ansible.builtin.set_fact:
+    _pihole_groups_mod: '{{
+        _pihole_api.json.groups | map(attribute="name") | list |
+        intersect(_pihole_cfg_mgmt_groups.role_groups) |
+        reject("in", _pihole_groups_add)
+      }}'
+
+- name: 'API | groups | remove non-managed group'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/groups/" ~ item | urlencode }}'
+    method: 'DELETE'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [204]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  loop: '{{ _pihole_groups_del }}'
+
+- name: 'API | groups | add managed group'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/groups" }}'
+    method: 'POST'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [201]
+    body:
+      name: '{{ group.name }}'
+      comment: '{{ group.comment }}'
+      enabled: '{{ group.enabled }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  vars:
+    group: '{{
+        _pihole_cfg_mgmt_groups.raw |
+        selectattr("name", "==", item) | list | first
+      }}'
+  loop: '{{ _pihole_groups_add }}'
+
+- name: 'API | groups | update managed group'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/groups/" ~ group.name | urlencode }}'
+    method: 'PUT'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    body:
+      name: '{{ group.name }}'
+      comment: '{{ group.comment }}'
+      enabled: '{{ group.enabled }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  vars:
+    group: '{{
+        _pihole_cfg_mgmt_groups.raw |
+        selectattr("name", "==", item) | list | first
+      }}'
+  loop: '{{ _pihole_groups_mod }}'
+
+- name: 'API | groups | query final group state'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/groups" }}'
+    method: 'GET'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  register: _pihole_api
+
+- name: 'Config | cache group mapping'
+  ansible.builtin.set_fact:
+    _pihole: '{{
+        _pihole |
+        combine({"groups": _pihole_api.json.groups |
+                           items2dict(key_name="name", value_name="id")})
+      }}'

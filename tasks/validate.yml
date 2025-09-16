@@ -2,7 +2,27 @@
 ###############################################################################
 # Validate
 ###############################################################################
-# Start Deluge services and confirm they are active and running.
+# Confirm no broken configurations and PiHole is active and running.
+
+- name: 'Validate | check for broken configs'
+  ansible.builtin.stat:
+    path: '/etc/pihole/pihole.toml.broken'
+  register: _pihole_test
+
+- name: 'Validate | assert no broken configs'
+  when: _pihole_test.stat.exists
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                       Broken configs found.                       │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ /etc/pihole/pihole.toml.broken should not exist.
+      │
+      │ There was an error rendering the configuration file which PiHole
+      │ had to re-write with defaults. This due to syntactically correct
+      │ but invalid settings.
 
 - name: 'Validate | query service status'
   ansible.builtin.service_facts:

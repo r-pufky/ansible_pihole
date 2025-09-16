@@ -1,0 +1,393 @@
+---
+- name: 'Verify'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | REST API auth'
+      ansible.builtin.uri:
+        url: 'https://localhost:443/api/auth'
+        method: 'POST'
+        status_code: [200]
+        body:
+          password: 'test2'
+        body_format: 'json'
+        validate_certs: false
+      register: _pihole_api
+
+    - name: 'Verify | cache tokens'
+      ansible.builtin.set_fact:
+        _pihole:
+          token: '{{ _pihole_api.json.session.sid }}'
+          csrf: '{{ _pihole_api.json.session.csrf }}'
+
+    - name: 'Verify | query groups'
+      ansible.builtin.uri:
+        url: 'https://localhost:443/api/groups'
+        method: 'GET'
+        status_code: [200]
+        body:
+          sid: '{{ _pihole.token }}'
+          csrf: '{{ _pihole.csrf }}'
+        body_format: 'json'
+        validate_certs: false
+      register: _pihole_api
+
+    - name: 'Verify | assert expected number of groups'
+      ansible.builtin.assert:
+        quiet: true
+        that: _pihole_api.json.groups | length == 4
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                    Incorrect number of groups.                    │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ Expected: 4
+          │ Recieved: {{ _pihole_api.json.groups | length }}
+
+    - name: 'Verify | assert group Default'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - group.name == 'Default'
+          - group.id == 0
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                     Default group incorrect.                      │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ group }}
+      vars:
+        group: '{{
+            _pihole_api.json.groups |
+            selectattr("name", "==", "Default") | list | first
+          }}'
+
+    - name: 'Verify | assert group disabled'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - group.name == 'disabled'
+          - group.enabled == false
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                     disabled group incorrect.                     │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ group }}
+      vars:
+        group: '{{
+            _pihole_api.json.groups |
+            selectattr("name", "==", "disabled") | list | first
+          }}'
+
+    - name: 'Verify | assert group modified'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - group.name == 'modified'
+          - group.enabled == true
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                     modified group incorrect.                     │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ group }}
+      vars:
+        group: '{{
+            _pihole_api.json.groups |
+            selectattr("name", "==", "modified") | list | first
+          }}'
+
+    - name: 'Verify | assert group new group with spaces'
+      ansible.builtin.assert:
+        quiet: true
+        that: group.name == 'new group with spaces'
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │              new group with spaces group incorrect.               │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ group }}
+      vars:
+        group: '{{
+            _pihole_api.json.groups |
+            selectattr("name", "==", "new group with spaces") | list | first
+          }}'
+
+    - name: 'Verify | query clients'
+      ansible.builtin.uri:
+        url: 'https://localhost:443/api/clients'
+        method: 'GET'
+        status_code: [200]
+        body:
+          sid: '{{ _pihole.token }}'
+          csrf: '{{ _pihole.csrf }}'
+        body_format: 'json'
+        validate_certs: false
+      register: _pihole_api
+
+    - name: 'Verify | assert expected number of clients'
+      ansible.builtin.assert:
+        quiet: true
+        that: _pihole_api.json.clients | length == 2
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                   Incorrect number of clients.                    │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ Expected: 2
+          │ Recieved: {{ _pihole_api.json.clients | length }}
+
+    - name: 'Verify | assert client 00:11:22:AA:BB:CC'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - client.client == '00:11:22:AA:BB:CC'
+          - client.comment == 'new'
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                Client 00:11:22:AA:BB:CC incorrect.                │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ client }}
+      vars:
+        client: '{{
+            _pihole_api.json.clients |
+            selectattr("client", "==", "00:11:22:AA:BB:CC") | list | first
+          }}'
+
+    - name: 'Verify | assert group 00:11:22:AA:BB:EE'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - client.client == '00:11:22:AA:BB:EE'
+          - client.comment == 'client modified to modified group'
+          - client.groups | length == 2
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                Client 00:11:22:AA:BB:EE incorrect.                │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ client }}
+      vars:
+        client: '{{
+            _pihole_api.json.clients |
+            selectattr("client", "==", "00:11:22:AA:BB:EE") | list | first
+          }}'
+
+    - name: 'Verify | query domains'
+      ansible.builtin.uri:
+        url: 'https://localhost:443/api/domains'
+        method: 'GET'
+        status_code: [200]
+        body:
+          sid: '{{ _pihole.token }}'
+          csrf: '{{ _pihole.csrf }}'
+        body_format: 'json'
+        validate_certs: false
+      register: _pihole_api
+
+    - name: 'Verify | assert expected number of domains'
+      ansible.builtin.assert:
+        quiet: true
+        that: _pihole_api.json.domains | length == 4
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                   Incorrect number of domains.                    │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ Expected: 4
+          │ Received: {{ _pihole_api.json.domains | length }}
+
+    - name: 'Verify | assert domain example.com'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - domain.domain == 'example.com'
+          - domain.comment == 'Example allowed domain match.'
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                   Domain example.com incorrect.                   │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ domain }}
+      vars:
+        domain: '{{
+            _pihole_api.json.domains |
+            selectattr("domain", "==", "example.com") | list | first
+          }}'
+
+    - name: 'Verify | assert domain modified.com'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - domain.domain == 'modified.com'
+          - domain.comment == 'Domain will be modified.'
+          - domain.groups | length == 2
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                  Domain modified.com incorrect.                   │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ domain }}
+      vars:
+        domain: '{{
+            _pihole_api.json.domains |
+            selectattr("domain", "==", "modified.com") | list | first
+          }}'
+
+    - name: 'Verify | assert domain regex ((^)|(\.))regex\.'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - domain.domain == '((^)|(\.))regex\.'
+          - domain.comment == 'Regex domain block.'
+          - domain.kind == 'regex'
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                      Domain regex incorrect.                      │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ domain }}
+      vars:
+        domain: "{{
+            _pihole_api.json.domains |
+            selectattr('domain', '==', '((^)|(\\.))regex\\.') | list | first
+          }}"
+
+    - name: 'Verify | assert domain modified-type.com'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - domain.domain == 'modified-type.com'
+          - domain.comment == 'Domain will be modified.'
+          - domain.type == 'deny'
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                Domain modified-type.com incorrect.                │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ domain }}
+      vars:
+        domain: '{{
+            _pihole_api.json.domains |
+            selectattr("domain", "==", "modified-type.com") | list | first
+          }}'
+
+    - name: 'Verify | query lists'
+      ansible.builtin.uri:
+        url: 'https://localhost:443/api/lists'
+        method: 'GET'
+        status_code: [200]
+        body:
+          sid: '{{ _pihole.token }}'
+          csrf: '{{ _pihole.csrf }}'
+        body_format: 'json'
+        validate_certs: false
+      register: _pihole_api
+
+    - name: 'Verify | assert expected number of lists'
+      ansible.builtin.assert:
+        quiet: true
+        that: _pihole_api.json.lists | length == 3
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │                    Incorrect number of lists.                     │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ Expected: 3
+          │ Received: {{ _pihole_api.json.lists | length }}
+
+    # TODO(bug): See lists - update tests when list deletion enabled.
+    - name: 'Verify | assert list StevenBlack/hosts/master/hosts'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - list.address ==
+            'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+          - list.groups | length == 1
+          - list.enabled == true
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │          List StevenBlack/hosts/master/hosts incorrect.           │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ list }}
+      vars:
+        list: '{{
+            _pihole_api.json.lists |
+            selectattr(
+                "address",
+                "==",
+                "https://raw.githubusercontent.com/" ~
+                "StevenBlack/hosts/master/hosts"
+              ) | list | first
+          }}'
+
+    - name: 'Verify | assert list vokins/yhosts/master/hosts'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - list.address ==
+            'https://raw.githubusercontent.com/vokins/yhosts/master/hosts'
+          - list.groups | length == 2
+          - list.enabled == true
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │            List vokins/yhosts/master/hosts incorrect.             │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ list }}
+      vars:
+        list: '{{
+            _pihole_api.json.lists |
+            selectattr(
+                "address",
+                "==",
+                "https://raw.githubusercontent.com/" ~
+                "vokins/yhosts/master/hosts"
+              ) | list | first
+          }}'
+
+    - name:
+        'Verify | assert list StevenBlack/hosts/master/data/add.2o7Net/hosts'
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - list.address ==
+            'https://raw.githubusercontent.com/StevenBlack/hosts/master/data/add.2o7Net/hosts'
+          - list.groups | length == 1
+          - list.enabled == true
+        fail_msg: |
+          ╭───────────────────────────────────────────────────────────────────╮
+          │                                                                   │
+          │  List StevenBlack/hosts/master/data/add.2o7Net/hosts incorrect.   │
+          │                                                                   │
+          ├───────────────────────────────────────────────────────────────────╯
+          │ {{ list }}
+      vars:
+        list: '{{
+            _pihole_api.json.lists |
+            selectattr(
+                "address",
+                "==",
+                "https://raw.githubusercontent.com/" ~
+                "StevenBlack/hosts/master/data/add.2o7Net/hosts"
+              ) | list | first
+          }}'

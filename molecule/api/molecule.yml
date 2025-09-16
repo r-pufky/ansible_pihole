@@ -1,13 +1,15 @@
 ---
 ###############################################################################
-# TLS / Prefix
+# API
 ###############################################################################
-# Custom TLS certificate is loaded correctly; ensure address prefix renders.
+# Test all support REST API interactions.
+#
+# First apply role with all group management options defined; then run role
+# again on top of this state to check group management deletions, insertions,
+# and modifications.
 #
 # Tests:
-# * /etc/pihole/pihole.pem is set correctly.
-# * pihole_cfg_webserver_paths_prefix is set correctly.
-# * /etc/pihole/pihole.toml.broken does NOT exist.
+# * Group management works correctly (new, deleted, updated groups).
 
 dependency:
   name: 'galaxy'
@@ -24,16 +26,16 @@ provisioner:
   inventory:
     group_vars:
       all:
-        pihole_cfg_webserver_tls_cert: '{{
-                lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
-                "/molecule/cache/pihole_test.pem"
-              }}'
-        pihole_cfg_webserver_paths_prefix: '/pihole'
         pihole_cfg_webserver_api_pwhash: 'test'
-        pihole_cfg_webserver_api_app_pwhash: ''
-        pihole_srv_api_config_enable: false
+        pihole_cfg_webserver_api_totp_secret:
+          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
+        pihole_cfg_webserver_api_app_pwhash: 'test2'
+        pihole_cfg_debug_api: true
+        pihole_srv_api_config_enable: true
+        pihole_srv_update_enable: false
+        pihole_srv_gravity_update_enable: false
 platforms:
-  - name: 'pihole-debian-13-tls_prefix'
+  - name: 'pihole-debian-13-api'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:

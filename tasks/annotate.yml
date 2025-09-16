@@ -35,118 +35,6 @@
 # Reference:
 # * https://docs.pi-hole.net/ftldns/configfile
 
-# <ip>,<host>
-- name: 'Annotate | parse pihole_cfg_dns_hosts'
-  ansible.builtin.set_fact:
-    _pihole_cfg_dns_hosts:
-      '{{ _pihole_cfg_dns_hosts | default([]) + [item.ip ~ " " ~ item.host] }}'
-  loop: '{{ pihole_cfg_dns_hosts }}'
-  loop_control:
-    label: '{{ item.host }}'
-
-# <cname>,<target>[,<TTL>]
-- name: 'Annotate | parse pihole_cfg_dns_cname_records'
-  ansible.builtin.set_fact:
-    _pihole_cfg_dns_cname_records: '{{
-        _pihole_cfg_dns_cname_records | default([]) +
-        [
-          item.cname ~ "," ~
-          item.target ~
-          (
-            ""
-            if item.ttl | default("") | string | length == 0 else
-            "," ~ item.ttl
-          )
-        ]
-      }}'
-  loop: '{{ pihole_cfg_dns_cname_records }}'
-  loop_control:
-    label: '{{ item.cname }}'
-
-# <enabled>,<ip-address>[/<prefix-len>],<server>[#<port>][,<domain>]
-- name: 'Annotate | parse pihole_cfg_dns_rev_servers'
-  ansible.builtin.set_fact:
-    _pihole_cfg_dns_rev_servers: '{{
-        _pihole_cfg_dns_rev_servers | default([]) +
-        [
-          item.enabled ~ "," ~
-          item.ip ~ "," ~
-          item.server ~
-          (
-            ""
-            if item.domain | default("") | length == 0 else
-            "," ~ item.domain
-          )
-        ]
-      }}'
-  loop: '{{ pihole_cfg_dns_rev_servers }}'
-  loop_control:
-    label: '{{ item.server }}'
-
-# [<hwaddr>][,id:<client_id>|*][,set:<tag>][,tag:<tag>][,<ipaddr>][,<hostname>]
-# [,<lease_time>][,ignore]
-- name: 'Annotate | parse pihole_cfg_dhcp_hosts'
-  ansible.builtin.set_fact:
-    _pihole_cfg_dhcp_hosts: '{{
-        _pihole_cfg_dhcp_hosts | default([]) +
-        [
-          (
-            [item.hwaddr] | flatten | join(",")
-            if item.hwaddr | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            ",id:" ~ item.id
-            if item.id | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            ",set:" ~ [item.set] | flatten | join(",set:")
-            if item.set | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            ",tag:" ~ [item.tag] | flatten | join(",tag:")
-            if item.tag | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            "," ~ [item.ip] | flatten | join(",")
-            if item.ip | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            "," ~ item.hostname
-            if item.hostname | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            "," ~ item.lease
-            if item.lease | default("") | length > 0 else
-            ""
-          ) ~
-          (
-            ",ignore"
-            if item.ignore | default(false) else
-            ""
-          )
-        ]
-      }}'
-  loop: '{{ pihole_cfg_dhcp_hosts | default([]) }}'
-  loop_control:
-    label: '{{ item.hostname | default(item.ip) }}'
-
-# ['<header>: <value>']
-- name: 'Annotate | parse pihole_cfg_webserver_headers'
-  ansible.builtin.set_fact:
-    _pihole_cfg_webserver_headers: "{{
-        _pihole_cfg_webserver_headers | default([]) +
-        [item.header ~ ': ' ~ item.value]
-      }}"
-  loop: '{{ pihole_cfg_webserver_headers }}'
-  loop_control:
-    label: '{{ item.header }}'
-
 - name: 'Annotate | sanitize & annotate service defaults'
   ansible.builtin.set_fact:
     _pihole_srv_version: {
@@ -171,29 +59,16 @@
       deprecated: false,
       order: 2,
     }
-    _pihole_srv_user: {
+    _pihole_srv_gravity_update_enable: {
       section: '',
       key: '',
-      raw: '{{ pihole_role_user.name }}',  # Not user configurable.
-      default: 'pihole',
-      role_uid: '',  # (str) UID.
-      hint: 'str',
+      raw: '{{ pihole_srv_gravity_update_enable }}',
+      default: true,
+      hint: 'bool',
       added: '6.1.4',
       sensitive: false,
       deprecated: false,
       order: 3,
-    }
-    _pihole_srv_group: {
-      section: '',
-      key: '',
-      raw: '{{ pihole_role_group.name }}',  # Not user configurable.
-      default: 'pihole',
-      role_gid: '',  # (str) GID.
-      hint: 'str',
-      added: '0.0.0',
-      sensitive: false,
-      deprecated: false,
-      order: 4,
     }
     _pihole_srv_totp_display_enable: {
       section: '',
@@ -204,7 +79,7 @@
       added: '6.1.4',
       sensitive: false,
       deprecated: false,
-      order: 5,
+      order: 4,
     }
     _pihole_srv_api: {
       section: '',
@@ -215,12 +90,23 @@
       added: '6.1.4',
       sensitive: false,
       deprecated: false,
-      order: 6,
+      order: 5,
     }
     _pihole_srv_api_config_enable: {
       section: '',
       key: '',
       raw: "{{ pihole_srv_api_config_enable }}",
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 6,
+    }
+    _pihole_srv_api_validate_enable: {
+      section: '',
+      key: '',
+      raw: "{{ pihole_srv_api_validate_enable }}",
       default: false,
       hint: 'bool',
       added: '6.1.4',
@@ -238,6 +124,74 @@
       sensitive: false,
       deprecated: false,
       order: 8,
+    }
+    _pihole_srv_user: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_role_user.name }}',  # Not user configurable.
+      default: 'pihole',
+      role_uid: '',  # (str) UID.
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 9,
+    }
+    _pihole_srv_group: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_role_group.name }}',  # Not user configurable.
+      default: 'pihole',
+      role_gid: '',  # (str) GID.
+      hint: 'str',
+      added: '0.0.0',
+      sensitive: false,
+      deprecated: false,
+      order: 10,
+    }
+    _pihole_srv_backup_pre_enable: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_backup_pre_enable }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 11,
+    }
+    _pihole_srv_backup_post_enable: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_backup_post_enable }}',
+      default: false,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 12,
+    }
+    _pihole_srv_backup_failures_enable: {
+      section: '',
+      key: '',
+      raw: '{{ pihole_srv_backup_failures_enable }}',
+      default: true,
+      hint: 'bool',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 13,
+    }
+    _pihole_srv_backup_dest: {
+      section: '',
+      key: '',
+      raw: "{{ pihole_srv_backup_dest | regex_replace('\\/$', '') ~ '/' }}",
+      default: '{{ "group_vars/pihole/data/" }}',
+      hint: 'str',
+      added: '6.1.4',
+      sensitive: false,
+      deprecated: false,
+      order: 14,
     }
     _pihole_cfg_dns_upstreams: {
       section: 'dns',
@@ -353,7 +307,7 @@
       section: 'dns',
       key: 'hosts',
       raw: '{{ pihole_cfg_dns_hosts }}',
-      data: '{{ _pihole_cfg_dns_hosts | default([]) }}',
+      data: [],  # <ip>,<host>.
       default: [],
       hint: 'list of dict',
       added: '6.1.4',
@@ -488,7 +442,7 @@
       section: 'dns',
       key: 'cnameRecords',
       raw: '{{ pihole_cfg_dns_cname_records }}',
-      data: '{{ _pihole_cfg_dns_cname_records | default([]) }}',
+      data: [],  # <cname>,<target>[,<TTL>].
       default: [],
       hint: 'list of dict',
       added: '6.1.4',
@@ -511,7 +465,8 @@
       section: 'dns',
       key: 'revServers',
       raw: '{{ pihole_cfg_dns_rev_servers }}',
-      data: '{{ _pihole_cfg_dns_rev_servers | default([]) }}',
+      # <enabled>,<ip-address>[/<prefix-len>],<server>[#<port>][,<domain>]
+      data: [],
       default: [],
       hint: 'list of dict',
       added: '6.1.4',
@@ -853,7 +808,9 @@
       section: 'dhcp',
       key: 'hosts',
       raw: '{{ pihole_cfg_dhcp_hosts }}',
-      data: '{{ _pihole_cfg_dhcp_hosts | default([]) }}',
+      # [<hwaddr>][,id:<client_id>|*][,set:<tag>][,tag:<tag>][,<ipaddr>]
+      # [,<hostname>][,<lease_time>][,ignore]
+      data: [],
       default: [],
       hint: 'list of dict',
       added: '6.1.4',
@@ -1142,7 +1099,8 @@
       section: 'webserver',
       key: 'headers',
       raw: '{{ pihole_cfg_webserver_headers }}',
-      data: '{{ _pihole_cfg_webserver_headers }}',
+      # '<header>: <value>'
+      data: [],
       default: [
         {header: 'X-DNS-Prefetch-Control', value: 'off'},
         {header: 'Content-Security-Policy',
@@ -1988,11 +1946,14 @@
       deprecated: false,
       order: 30
     }
-    _pihole_cfg_mgmt_domain_blocklists: {
+    _pihole_cfg_mgmt_groups: {
       section: 'api',
       key: '',
-      raw: '{{ pihole_cfg_mgmt_domain_blocklists }}',
-      default: [],
+      raw: '{{ pihole_cfg_mgmt_groups }}',
+      default:
+        [{name: 'Default', comment: 'The default group', enabled: true}],
+      role_groups:
+        '{{ pihole_cfg_mgmt_groups | map(attribute="name") | list }}',
       hint: 'list of dict',
       added: '6.1.4',
       sensitive: false,
@@ -2004,48 +1965,167 @@
       key: '',
       raw: '{{ pihole_cfg_mgmt_clients }}',
       default: [],
+      role_clients:
+        '{{ pihole_cfg_mgmt_clients | map(attribute="client") | list }}',
       hint: 'list of dict',
       added: '6.1.4',
       sensitive: false,
       deprecated: false,
       order: 2,
     }
-    _pihole_cfg_mgmt_groups: {
+    _pihole_cfg_mgmt_domains: {
       section: 'api',
       key: '',
-      raw: '{{ pihole_cfg_mgmt_groups }}',
+      raw: '{{ pihole_cfg_mgmt_domains }}',
       default: [],
+      role_domains:
+        '{{ pihole_cfg_mgmt_domains | map(attribute="domain") | list }}',
       hint: 'list of dict',
       added: '6.1.4',
       sensitive: false,
       deprecated: false,
       order: 3,
     }
-    _pihole_cfg_mgmt_client_groups_blocklist: {
+    _pihole_cfg_mgmt_lists: {
       section: 'api',
       key: '',
-      raw: '{{ pihole_cfg_mgmt_client_groups_blocklist }}',
+      raw: '{{ pihole_cfg_mgmt_lists }}',
       default: [],
+      role_lists:
+        '{{ pihole_cfg_mgmt_lists | map(attribute="address") | list }}',
       hint: 'list of dict',
       added: '6.1.4',
       sensitive: false,
       deprecated: false,
       order: 4,
     }
-    _pihole_cfg_mgmt_domain_groups_blocklist: {
-      section: 'api',
-      key: '',
-      raw: '{{ pihole_cfg_mgmt_domain_groups_blocklist }}',
-      default: [],
-      hint: 'list of dict',
-      added: '6.1.4',
-      sensitive: false,
-      deprecated: false,
-      order: 5,
-    }
+
+- name: 'Annotate | normalize pihole_cfg_dns_hosts'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dns_hosts: '{{
+        _pihole_cfg_dns_hosts | combine({
+          "data":
+            _pihole_cfg_dns_hosts.data +
+            [item.ip ~ " " ~ item.host]
+        })
+      }}'
+  loop: '{{ _pihole_cfg_dns_hosts.raw }}'
+  loop_control:
+    label: '{{ item.host }}'
+
+- name: 'Annotate | normalize pihole_cfg_dns_cname_records'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dns_cname_records: '{{
+        _pihole_cfg_dns_cname_records | combine({
+          "data":
+            _pihole_cfg_dns_cname_records.data +
+            [
+              item.cname ~ "," ~
+              item.target ~
+              (
+                ""
+                if item.ttl | default("") | string | length == 0 else
+                "," ~ item.ttl
+              )
+            ]
+        })
+      }}'
+  loop: '{{ _pihole_cfg_dns_cname_records.raw }}'
+  loop_control:
+    label: '{{ item.cname }}'
+
+- name: 'Annotate | normalize pihole_cfg_dns_rev_servers'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dns_rev_servers: '{{
+        _pihole_cfg_dns_rev_servers | combine({
+          "data":
+            _pihole_cfg_dns_rev_servers.data +
+            [
+              item.enabled ~ "," ~
+              item.ip ~ "," ~
+              item.server ~
+              (
+                ""
+                if item.domain | default("") | length == 0 else
+                "," ~ item.domain
+              )
+            ]
+        })
+      }}'
+  loop: '{{ _pihole_cfg_dns_rev_servers.raw }}'
+  loop_control:
+    label: '{{ item.server }}'
+
+- name: 'Annotate | normalize pihole_cfg_dhcp_hosts'
+  ansible.builtin.set_fact:
+    _pihole_cfg_dhcp_hosts: '{{
+        _pihole_cfg_dhcp_hosts | combine({
+          "data":
+            _pihole_cfg_dhcp_hosts.data +
+            [
+              (
+                [item.hwaddr] | flatten | join(",")
+                if item.hwaddr | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                ",id:" ~ item.id
+                if item.id | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                ",set:" ~ [item.set] | flatten | join(",set:")
+                if item.set | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                ",tag:" ~ [item.tag] | flatten | join(",tag:")
+                if item.tag | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                "," ~ [item.ip] | flatten | join(",")
+                if item.ip | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                "," ~ item.hostname
+                if item.hostname | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                "," ~ item.lease
+                if item.lease | default("") | length > 0 else
+                ""
+              ) ~
+              (
+                ",ignore"
+                if item.ignore | default(false) else
+                ""
+              )
+            ]
+        })
+      }}'
+  loop: '{{ _pihole_cfg_dhcp_hosts.raw }}'
+  loop_control:
+    label: '{{ item.hostname | default(item.ip) }}'
+
+- name: 'Annotate | normalize pihole_cfg_webserver_headers'
+  ansible.builtin.set_fact:
+    _pihole_cfg_webserver_headers: '{{
+        _pihole_cfg_webserver_headers | combine({
+          "data":
+            _pihole_cfg_webserver_headers.data +
+            [item.header ~ ": " ~ item.value]
+        })
+      }}'
+  loop: '{{ _pihole_cfg_webserver_headers.raw }}'
+  loop_control:
+    label: '{{ item.header }}'
 
 - name: 'Annotate | generate config map'
   ansible.builtin.set_fact:
+    _pihole: {}
     _pihole_map: '{{
         hostvars[inventory_hostname] | dict2items |
         selectattr("key", "match", "_pihole_cfg_*")

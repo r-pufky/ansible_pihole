@@ -1,134 +1,121 @@
 ---
 ###############################################################################
-# Pi-Hole Management Lists
+# Group Management Lists
 ###############################################################################
-# Management lists are configured via the REST API. Application password used
+# Group Management lists are configured via REST API. Application password used
 # with fallback to web password with TOTP token prompt.
 #
 # Requires:
 # * pihole_srv_api set.
+# * pihole_srv_api_config_enable=true.
 # * pihole_cfg_webserver_api_totp_secret set.
 # * pihole_cfg_webserver_api_app_pwhash or pihole_cfg_webserver_api_pwhash set.
 
-# TODO(role): Update and modernize these when implementing API.
-# Define Adlist sources for generating domain blocklists.
+# Group Management → Groups.
 #
-# stevenblack's hosts adlist is automatically added when installing as ID 1.
-#
-# pihole_cfg_mgmt_ad_sources:
-#   - id: int (unique id starting at 1)
-#     address: str (URL for adlist)
-#     enabled: bool (enable use)
-#     comment: str (user comment)
-#
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/#adlist-table-adlist
-
-pihole_cfg_mgmt_ad_sources: []
-#  - id: 1
-#    address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
-#    enabled: true
-#    comment: 'Migrated from /etc/pihole/adlists.list'
-
-###############################################################################
-# Pi-Hole Domain Blocklist Table
-###############################################################################
-# Define domain blocking behavior (whitelist, blacklist).
-#
-# pihole_cfg_mgmt_domain_blocklists:
-#   - id: int (unique id starting at 1)
-#     type: int (0 = exact whitelist,
-#                1 = exact blacklist,
-#                2 = regex whitelist,
-#                3 = regex blacklist)
-#     domain: str (domain)
-#     enabled: bool (enable use)
-#     comment: str (user comment)
-#
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/#domain-tables-domainlist
-
-pihole_cfg_mgmt_domain_blocklists: []
-
-###############################################################################
-# Pi-Hole Clients Table
-###############################################################################
-# Define Pi-Hole clients. All clients are automatically added to the 'Default'
-# group in Pi-Hole to automatically enforce blocking.
-#
-# pihole_cfg_mgmt_clients:
-#   - id: int (unique id starting at 1)
-#     ip: str (IPv4,IPv6,CIDR)
-#     comment: str (user comment)
-#     remove_default_group: bool (remove from automatic 'Default' group)
-#
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/#client-table-client
-
-pihole_cfg_mgmt_clients: []
-
-###############################################################################
-# Pi-Hole Groups Table
-###############################################################################
-# Define Pi-Hole group management.
-#
-# Group 'Default' (id 0) is special as it is automatically assigned to domains
-# and clients not being a member of other groups. Each newly added client or
-# domain gets assigned to group zero when being added.
+# Special Case:
+# * Default (id:0) is automatically created on installation; however this
+#   should **always** be specified to make role applications idempotent.
+# * Each newly added client or domain gets assigned to group id:0 when being
+#   added.
 #
 # pihole_cfg_mgmt_groups:
-#   - id: int (unique id starting at 1)
-#     enabled: bool (enable use)
-#     name: str (group name)
-#     description: str (description)
+#       list of dict - Group definitions.
+#   - name: str - Group name.
+#     comment: str - Group description.
+#     enabled: bool - Enable processing of objects linked to this group.
 #
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/groups/#group-management
+# default:
+#   - name: 'Default'
+#     comment: 'The default group'
+#     enable: true
+pihole_cfg_mgmt_groups:
+  - name: 'Default'
+    comment: 'The default group'
+    enabled: true
 
-pihole_cfg_mgmt_groups: []
-#   - id: 0
+# Group Management → Clients
+#
+# pihole_cfg_mgmt_clients:
+#     list of dict - Client definitions.
+#   - client: str - Client identifier (IPv4, IPv6, CIDR, MAC, Hostname, or
+#         Interface). IP/CIDR preferred over MAC/Hostname/Interface as the
+#         latter will only be available after some time. MAC recognition only
+#         works for devices at most one networking hop away.
+#         Special Case:
+#           ^:{INTERFACE}: Interfaces must be pre-pended with colon ':'.
+#     comment: str - Client description.
+#     groups: list of str - Groups client belongs to. Use
+#         pihole_cfg_mgmt_groups[].name.
+#
+# pihole_cfg_mgmt_clients:
+#   - client: '00:11:22:AA:BB:CC'
+#     comment: 'lappy'
+#     groups:
+#       - 'Default'
+#       - 'laptops'
+#
+# Default: [].
+pihole_cfg_mgmt_clients: []
+
+# Group Management → Domains
+#
+# pihole_cfg_mgmt_domains:
+#     list of dict - Domain definitions.
+#   - domain: str - Domain or regex pattern. Unicode characters accepted.
+#     type: str - Domain type.
+#         Values:
+#           allow: Allow domain.
+#           deny: Deny domain.
+#     kind: str - Domain matching method (kind).
+#         Values:
+#           exact: Exact domain string match.
+#           regex: Regex domain string match.
+#     comment: str - Domain description.
+#     groups: list of str - Groups client belongs to. Use
+#         pihole_cfg_mgmt_groups[].name.
+#     enabled: bool - Enable domain rule.
+#
+# pihole_cfg_mgmt_domains:
+#   - domain: 'example.com'
+#     type: 'allow'
+#     kind: 'exact'
+#     comment: 'Example allowed domain match.'
+#     groups: ['Default']
 #     enabled: true
-#     name: 'Default'
-#     description: 'The default group'
-
-###############################################################################
-# Pi-Hole Groups Adlist Table
-###############################################################################
-# Define Pi-Hole group adlist management.
 #
-# pihole_cfg_mgmt_ad_groups_blocklist:
-#   - adlist_id: int (existing adlist ID)
-#     group_id: int (existing group ID)
-#
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/groups/
+# Default: [].
+pihole_cfg_mgmt_domains: []
 
-pihole_cfg_mgmt_ad_groups_blocklist: []
-
-###############################################################################
-# Pi-Hole Groups Clients Table
-###############################################################################
-# Define Pi-Hole group clients blocklists management.
+# Group Management → Lists
 #
-# pihole_cfg_mgmt_client_groups_blocklist:
-#   - client_id: int (existing client ID)
-#     group_id: int (existing group ID)
+# TODO(bug): List deletion via API is currently broken. This is fixed in the
+#     next PiHole release. Lists will still be managed, but cannot be deleted.
 #
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/groups/
-
-pihole_cfg_mgmt_client_groups_blocklist: []
-
-###############################################################################
-# Pi-Hole Groups Domain Blocklists Table
-###############################################################################
-# Define Pi-Hole group domain blocklists management.
+#     https://github.com/pi-hole/FTL/issues/2528
 #
-# pihole_cfg_mgmt_domain_groups_blocklist:
-#   - domainlist_id: int (existing domain blocklist ID)
-#     group_id: int (existing group ID)
+# pihole_cfg_mgmt_lists:
+#     list of dict - Subscribed list definitions.
+#   - address: str - List URL.
+#     type: str - List type.
+#         Values:
+#           allow: Allow domains on list.
+#           block: Block domains on list.
+#     comment: str - Domain description.
+#     groups: list of str - Groups client belongs to. Use
+#         pihole_cfg_mgmt_groups[].name.
+#     enabled: bool - Enable domain rule.
 #
-# Reference:
-# * https://docs.pi-hole.net/database/gravity/groups/
-
-pihole_cfg_mgmt_domain_groups_blocklist: []
+# Default:
+#   - address:
+#       'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+#     type: 'block'
+#     comment: 'Migrated from /etc/pihole/adlists.list'
+#     groups: ['Default']
+#     enabled: true
+pihole_cfg_mgmt_lists:
+  - address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+    type: 'block'
+    comment: 'Migrated from /etc/pihole/adlists.list'
+    groups: ['Default']
+    enabled: true

@@ -86,3 +86,12 @@
       installed: '{{ true if _pihole_toml.rc in [0, 1] else false }}'
       version: "{{ _pihole_toml.stdout | regex_search('\\(v(.+)\\)', '\\1') }}"
       install_cache: '{{ _pihole_cache.stat.exists }}'
+
+- name: 'Prep | pre-backup'
+  when: >
+    _pihole_srv_api_config_enable.raw and
+    _pihole_srv_backup_pre_enable.raw and
+    _pihole.installed
+  ansible.builtin.include_tasks: 'api/backup.yml'
+  vars:
+    label: 'pre'

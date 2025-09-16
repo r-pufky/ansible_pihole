@@ -1,0 +1,93 @@
+---
+###############################################################################
+# API Clients
+###############################################################################
+# Manage PiHole clients via REST API.
+#
+# Determine which clients to delete from PiHole; and calculate newly added
+# clients vs. pre-existing clients for updates.
+#
+# Reference:
+# * https://ftl.pi-hole.net/master/docs/#post-/clients
+
+- name: 'API | clients | query all'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/clients" }}'
+    method: 'GET'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  register: _pihole_api
+
+- name: 'API | clients | parse added, deleted clients'
+  ansible.builtin.set_fact:
+    _pihole_clients_del: '{{
+        _pihole_api.json.clients | map(attribute="client") | list |
+        difference(_pihole_cfg_mgmt_clients.role_clients)
+      }}'
+    _pihole_clients_add: '{{
+        _pihole_cfg_mgmt_clients.role_clients |
+        difference(_pihole_api.json.clients | map(attribute="client") | list)
+      }}'
+
+- name: 'API | clients | parse modified clients'
+  ansible.builtin.set_fact:
+    _pihole_clients_mod: '{{
+        _pihole_api.json.clients | map(attribute="client") | list |
+        intersect(_pihole_cfg_mgmt_clients.role_clients) |
+        reject("in", _pihole_clients_add)
+      }}'
+
+- name: 'API | clients | remove non-managed client'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/clients/" ~ item | urlencode }}'
+    method: 'DELETE'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [204]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  loop: '{{ _pihole_clients_del }}'
+
+- name: 'API | clients | add managed client'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/clients" }}'
+    method: 'POST'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [201]
+    body:
+      client: '{{ client.client }}'
+      comment: '{{ client.comment }}'
+      groups: '{{ client.groups | map("extract", _pihole.groups) | list }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  vars:
+    client: '{{
+        _pihole_cfg_mgmt_clients.raw |
+        selectattr("client", "==", item) | list | first
+      }}'
+  loop: '{{ _pihole_clients_add }}'
+
+- name: 'API | clients | update managed client'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/clients/" ~ client.client | urlencode }}'
+    method: 'PUT'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    body:
+      comment: '{{ client.comment }}'
+      groups: '{{ client.groups | map("extract", _pihole.groups) | list }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  vars:
+    client: '{{
+        _pihole_cfg_mgmt_clients.raw |
+        selectattr("client", "==", item) | list | first
+      }}'
+  loop: '{{ _pihole_clients_mod }}'

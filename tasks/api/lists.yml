@@ -1,0 +1,136 @@
+---
+###############################################################################
+# API Lists
+###############################################################################
+# Manage PiHole lists via REST API.
+#
+# Determine which lists to delete from PiHole; and calculate newly added
+# lists vs. pre-existing lists for updates.
+#
+# Once all modifications are done, query final list state for further API
+# processing.
+#
+# Reference:
+# * https://ftl.pi-hole.net/master/docs/#post-/lists
+
+# TODO(bug): List delete currently returns 404. Fixed in next release.
+- name: 'API | lists | WARNING ⚠'
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                     API list deletion broken.                     │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ List deletion via REST API is currently broken, and will be fixed
+      │ in the next release. This will still run, but **NO** deletion will
+      │ occur until it is patched.
+      │
+      │ Reference:
+      │ * https://github.com/pi-hole/FTL/issues/2528
+
+- name: 'API | lists | query all'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/lists" }}'
+    method: 'GET'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  register: _pihole_api
+
+- name: 'API | domains | parse lists'
+  ansible.builtin.set_fact:
+    _pihole_lists: '{{ _pihole_api.json.lists }}'
+
+- name: 'API | lists | parse existing lists'
+  ansible.builtin.set_fact:
+    _pihole_lists_del: '{{
+        _pihole_lists | map(attribute="address") | list |
+        difference(_pihole_cfg_mgmt_lists.role_lists)
+      }}'
+    _pihole_lists_add: '{{
+        _pihole_cfg_mgmt_lists.role_lists |
+        difference(_pihole_lists | map(attribute="address") | list)
+      }}'
+
+- name: 'API | lists | parse modified lists'
+  ansible.builtin.set_fact:
+    _pihole_lists_mod: '{{
+        _pihole_lists | map(attribute="address") | list |
+        intersect(_pihole_cfg_mgmt_lists.role_lists) |
+        reject("in", _pihole_clients_add)
+      }}'
+
+# - name: 'API | lists | remove non-managed list'
+#   ansible.builtin.uri:
+#     url: '{{
+#         _pihole_srv_api.raw ~ "/lists/" ~
+#         (list.address | urlencode | regex_replace("/", "%2F")) ~
+#         "&type=" ~ list.type
+#       }}'
+#     method: 'DELETE'
+#     headers:
+#       X-FTL-SID: '{{ _pihole.token }}'
+#       X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+#     status_code: [204]
+#     body:
+#       sid: '{{ _pihole.token }}'
+#       csrf: '{{ _pihole.csrf }}'
+#     body_format: 'json'
+#     validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+#   vars:
+#     list: '{{
+#         _pihole_lists |
+#         selectattr("address", "==", item) | list | first
+#       }}'
+#   loop: '{{ _pihole_lists_del }}'
+
+- name: 'API | lists | add managed list'
+  ansible.builtin.uri:
+    url: '{{ _pihole_srv_api.raw ~ "/lists" }}'
+    method: 'POST'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [201]
+    body:
+      address: '{{ list.address }}'
+      type: '{{ list.type }}'
+      comment: '{{ list.comment }}'
+      groups: '{{ list.groups | map("extract", _pihole.groups) | list }}'
+      enabled: '{{ list.enabled }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  vars:
+    list: '{{
+        _pihole_cfg_mgmt_lists.raw |
+        selectattr("address", "==", item) | list | first
+      }}'
+  loop: '{{ _pihole_lists_add }}'
+
+- name: 'API | lists | update managed list'
+  ansible.builtin.uri:
+    url: '{{
+        _pihole_srv_api.raw ~ "/lists/" ~
+        (item | urlencode | regex_replace("/", "%2F"))
+      }}'
+    method: 'PUT'
+    headers:
+      X-FTL-SID: '{{ _pihole.token }}'
+      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+    status_code: [200]
+    body:
+      comment: '{{ list.comment }}'
+      type: '{{ list.type }}'
+      groups: '{{ list.groups | map("extract", _pihole.groups) | list }}'
+      enabled: '{{ list.enabled }}'
+    body_format: 'json'
+    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+  vars:
+    list: '{{
+        _pihole_cfg_mgmt_lists.raw |
+        selectattr("address", "==", item) | list | first
+      }}'
+  loop: '{{ _pihole_lists_mod }}'

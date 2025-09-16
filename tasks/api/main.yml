@@ -1,0 +1,20 @@
+---
+###############################################################################
+# APIv6
+###############################################################################
+# Authenticate session to PiHole REST API.
+#
+# Reference:
+# * https://docs.pi-hole.net/api/
+# * https://ftl.pi-hole.net/master/docs/#post-/groups
+
+- name: 'API | auth'
+  ansible.builtin.include_tasks: 'auth.yml'
+- name: 'API | groups'
+  ansible.builtin.include_tasks: 'groups.yml'
+- name: 'API | clients'
+  ansible.builtin.include_tasks: 'clients.yml'
+- name: 'API | domains'
+  ansible.builtin.include_tasks: 'domains.yml'
+- name: 'API | lists'
+  ansible.builtin.include_tasks: 'lists.yml'

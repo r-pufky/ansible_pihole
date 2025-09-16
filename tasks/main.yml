@@ -7,19 +7,19 @@
   ansible.builtin.include_tasks: 'prep.yml'
 
 - name: 'TOTP'
-  when: pihole_cfg_webserver_api_totp_secret | length > 0
+  when: _pihole_cfg_webserver_api_totp_secret.raw | length > 0
   ansible.builtin.include_tasks: 'generator/totp.yml'
 
 - name: 'Balloon'
-  when: pihole_srv_balloon_enable
   ansible.builtin.include_tasks: 'generator/balloon.yml'
-
 - name: 'Install'
   ansible.builtin.include_tasks: 'install.yml'
 
-- name: 'Auth'
-  when: pihole_srv_api_config_enable
-  ansible.builtin.include_tasks: 'api/auth.yml'
+- name: 'API'
+  when: _pihole_srv_api_config_enable.raw
+  ansible.builtin.include_tasks: 'api/main.yml'
 
+- name: 'Update'
+  ansible.builtin.include_tasks: 'update.yml'
 - name: 'Validate'
   ansible.builtin.include_tasks: 'validate.yml'

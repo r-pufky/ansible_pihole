@@ -1,0 +1,161 @@
+---
+- name: 'Converge'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Converge | apply r_pufky.srv.pihole (initial state)'
+      ansible.builtin.include_role:
+        name: 'r_pufky.srv.pihole'
+      vars:
+        pihole_cfg_mgmt_groups:
+          - name: 'Default'
+            comment: 'The default group.'
+            enabled: true
+          - name: 'new group with spaces'
+            comment: 'new group with spaces.'
+            enabled: true
+          - name: 'disabled'
+            comment: 'disabled.'
+            enabled: false
+          - name: 'modified'
+            comment: 'group modified to enabled.'
+            enabled: false
+          - name: 'deleted'
+            comment: 'group will be deleted.'
+            enabled: true
+        pihole_cfg_mgmt_clients:
+          - client: '00:11:22:AA:BB:CC'
+            comment: 'new'
+            groups: ['Default']
+          - client: '00:11:22:AA:BB:DD'
+            comment: 'client will be deleted'
+            groups: ['Default']
+          - client: '00:11:22:AA:BB:EE'
+            comment: 'client modified to modified group'
+            groups: ['Default']
+        pihole_cfg_mgmt_domains:
+          - domain: 'example.com'
+            type: 'allow'
+            kind: 'exact'
+            comment: 'Example allowed domain match.'
+            groups: ['Default']
+            enabled: true
+          - domain: 'modified.com'
+            type: 'deny'
+            kind: 'exact'
+            comment: 'Domain will be modified.'
+            groups: ['Default']
+            enabled: true
+          - domain: '((^)|(\.))regex\.'
+            type: 'deny'
+            kind: 'regex'
+            comment: 'Regex domain block.'
+            groups: ['Default']
+            enabled: true
+          - domain: 'delete.com'
+            type: 'allow'
+            kind: 'exact'
+            comment: 'Domain will be deleted.'
+            groups: ['Default']
+            enabled: false
+          - domain: 'modified-type.com'
+            type: 'allow'
+            kind: 'exact'
+            comment: 'Domain will be modified.'
+            groups: ['Default']
+            enabled: true
+        pihole_cfg_mgmt_lists:
+          - address: '{{
+                "https://raw.githubusercontent.com/" ~
+                "StevenBlack/hosts/master/hosts"
+              }}'
+            type: 'block'
+            comment: 'Migrated from /etc/pihole/adlists.list'
+            groups: ['Default']
+            enabled: true
+          - address: '{{
+                "https://raw.githubusercontent.com/" ~
+                "StevenBlack/hosts/master/data/add.2o7Net/hosts"
+              }}'
+            type: 'block'
+            comment: 'List to delete.'
+            groups: ['Default']
+            enabled: true
+          - address:
+              'https://raw.githubusercontent.com/vokins/yhosts/master/hosts'
+            type: 'block'
+            comment: 'List to modify.'
+            groups: ['Default']
+            enabled: true
+    - name: 'Converge | apply r_pufky.srv.pihole (final state)'
+      ansible.builtin.include_role:
+        name: 'r_pufky.srv.pihole'
+      vars:
+        pihole_cfg_mgmt_groups:
+          - name: 'Default'
+            comment: 'The default group.'
+            enabled: true
+          - name: 'new group with spaces'
+            comment: 'new group with spaces.'
+            enabled: true
+          - name: 'disabled'
+            comment: 'disabled.'
+            enabled: false
+          - name: 'modified'
+            comment: 'group modified to enabled.'
+            enabled: true
+        pihole_cfg_mgmt_clients:
+          - client: '00:11:22:AA:BB:CC'
+            comment: 'new'
+            groups: ['Default']
+          - client: '00:11:22:AA:BB:EE'
+            comment: 'client modified to modified group'
+            groups: ['Default', 'modified']
+        pihole_cfg_mgmt_domains:
+          - domain: 'example.com'
+            type: 'allow'
+            kind: 'exact'
+            comment: 'Example allowed domain match.'
+            groups: ['Default']
+            enabled: true
+          - domain: 'modified.com'
+            type: 'deny'
+            kind: 'exact'
+            comment: 'Domain will be modified.'
+            groups: ['Default', 'modified']
+            enabled: true
+          - domain: '((^)|(\.))regex\.'
+            type: 'deny'
+            kind: 'regex'
+            comment: 'Regex domain block.'
+            groups: ['Default']
+            enabled: true
+          - domain: 'modified-type.com'
+            type: 'deny'
+            kind: 'exact'
+            comment: 'Domain will be modified.'
+            groups: ['Default']
+            enabled: true
+        pihole_cfg_mgmt_lists:
+          - address: '{{
+                "https://raw.githubusercontent.com/" ~
+                "StevenBlack/hosts/master/hosts"
+              }}'
+            type: 'block'
+            comment: 'Migrated from /etc/pihole/adlists.list'
+            groups: ['Default']
+            enabled: true
+          - address: '{{
+                "https://raw.githubusercontent.com/" ~
+                "StevenBlack/hosts/master/data/add.2o7Net/hosts"
+              }}'
+            type: 'block'
+            comment: 'List to delete.'
+            groups: ['Default']
+            enabled: true
+          - address:
+              'https://raw.githubusercontent.com/vokins/yhosts/master/hosts'
+            type: 'block'
+            comment: 'List to modify.'
+            groups: ['Default', 'modified']
+            enabled: true
