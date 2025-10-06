@@ -42,11 +42,11 @@
   ansible.builtin.set_fact:
     _pihole_srv_user: '{{
         _pihole_srv_user |
-        combine({"role_uid": _pihole_srv_user_query.uid})
+        combine({"_uid": _pihole_srv_user_query.uid})
       }}'
     _pihole_srv_group: '{{
         _pihole_srv_group |
-        combine({"role_gid": _pihole_srv_user_query.group})
+        combine({"_gid": _pihole_srv_user_query.group})
       }}'
 
 - name: 'Prep | create {{ pihole_role_etc_dir }}'

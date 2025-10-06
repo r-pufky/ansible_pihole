@@ -25,10 +25,10 @@
   ansible.builtin.set_fact:
     _pihole_clients_del: '{{
         _pihole_api.json.clients | map(attribute="client") | list |
-        difference(_pihole_cfg_mgmt_clients.role_clients)
+        difference(_pihole_cfg_mgmt_clients._clients)
       }}'
     _pihole_clients_add: '{{
-        _pihole_cfg_mgmt_clients.role_clients |
+        _pihole_cfg_mgmt_clients._clients |
         difference(_pihole_api.json.clients | map(attribute="client") | list)
       }}'
 
@@ -36,7 +36,7 @@
   ansible.builtin.set_fact:
     _pihole_clients_mod: '{{
         _pihole_api.json.clients | map(attribute="client") | list |
-        intersect(_pihole_cfg_mgmt_clients.role_clients) |
+        intersect(_pihole_cfg_mgmt_clients._clients) |
         reject("in", _pihole_clients_add)
       }}'
 

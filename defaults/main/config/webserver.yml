@@ -233,8 +233,6 @@ pihole_cfg_webserver_interface_theme: 'default-auto'
 ###############################################################################
 # Webserver API (webserver.api)
 ###############################################################################
-# Rely on PiHole to generate BALLOON-SHA256 passwords. This is a fairly new
-# password hashing algorithm that has support
 
 # Concurrent sessions allowed for API.
 #

@@ -24,8 +24,8 @@
 - name: 'Install | set tls.pem'
   when: _pihole_cfg_webserver_tls_cert.raw | length > 0
   ansible.builtin.copy:
-    src: '{{ _pihole_cfg_webserver_tls_cert.role_src }}'
-    dest: '{{ _pihole_cfg_webserver_tls_cert.role_dest }}'
+    src: '{{ _pihole_cfg_webserver_tls_cert._src }}'
+    dest: '{{ _pihole_cfg_webserver_tls_cert._dest }}'
     owner: '{{ _pihole_srv_user.raw }}'
     group: '{{ _pihole_srv_group.raw }}'
     mode: '0600'

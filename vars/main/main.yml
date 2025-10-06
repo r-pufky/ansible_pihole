@@ -58,6 +58,23 @@ pihole_role_hash_time: 32
 pihole_role_hash_version: 1
 
 ###############################################################################
+# Unsafe Templates
+###############################################################################
+# Unsafe cannot be used in a filter assignment and must be done transitively
+# via variable assignment.
+
+pihole_role_unsafe_empty: !unsafe []
+
+pihole_role_unsafe_webserver_headers:
+  - {header: 'X-DNS-Prefetch-Control', value: 'off'}
+  - {header: 'Content-Security-Policy',
+     value: "default-src 'self' 'unsafe-inline';"}
+  - {header: 'X-Frame-Options', value: 'DENY'}
+  - {header: 'X-XSS-Protection', value: '0'}
+  - {header: 'X-Content-Type-Options', value: 'nosniff'}
+  - {header: 'Referrer-Policy', value: 'strict-origin-when-cross-origin'}
+
+###############################################################################
 # Default PiHole User/Group
 ###############################################################################
 # Create a more locked down pihole user than install script uses.

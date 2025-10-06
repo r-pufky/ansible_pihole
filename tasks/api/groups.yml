@@ -31,10 +31,10 @@
   ansible.builtin.set_fact:
     _pihole_groups_del: '{{
         _pihole_api.json.groups | map(attribute="name") | list |
-        difference(_pihole_cfg_mgmt_groups.role_groups)
+        difference(_pihole_cfg_mgmt_groups._groups)
       }}'
     _pihole_groups_add: '{{
-        _pihole_cfg_mgmt_groups.role_groups |
+        _pihole_cfg_mgmt_groups._groups |
         difference(_pihole_api.json.groups | map(attribute="name") | list)
       }}'
 
@@ -42,7 +42,7 @@
   ansible.builtin.set_fact:
     _pihole_groups_mod: '{{
         _pihole_api.json.groups | map(attribute="name") | list |
-        intersect(_pihole_cfg_mgmt_groups.role_groups) |
+        intersect(_pihole_cfg_mgmt_groups._groups) |
         reject("in", _pihole_groups_add)
       }}'
 

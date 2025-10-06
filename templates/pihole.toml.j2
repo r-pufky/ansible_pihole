@@ -9,7 +9,7 @@
 {%       if section.value.key in ['hostRecord', 'pwhash', 'totp_secret', 'app_pwhash'] %}
 {{ depth }}  {{ section.value.key }} = "{{ section.value.data }}"
 {%       elif section.value.key == 'cert' %}
-{{ depth }}  {{ section.value.key }} = "{{ section.value.role_dest }}"
+{{ depth }}  {{ section.value.key }} = "{{ section.value._dest }}"
 {%       elif section.value.hint == 'bool' %}
 {{ depth }}  {{ section.value.key }} = {{ section.value.raw | lower }}
 {%       elif section.value.hint == 'str' %}

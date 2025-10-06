@@ -48,10 +48,10 @@
   ansible.builtin.set_fact:
     _pihole_lists_del: '{{
         _pihole_lists | map(attribute="address") | list |
-        difference(_pihole_cfg_mgmt_lists.role_lists)
+        difference(_pihole_cfg_mgmt_lists._lists)
       }}'
     _pihole_lists_add: '{{
-        _pihole_cfg_mgmt_lists.role_lists |
+        _pihole_cfg_mgmt_lists._lists |
         difference(_pihole_lists | map(attribute="address") | list)
       }}'
 
@@ -59,7 +59,7 @@
   ansible.builtin.set_fact:
     _pihole_lists_mod: '{{
         _pihole_lists | map(attribute="address") | list |
-        intersect(_pihole_cfg_mgmt_lists.role_lists) |
+        intersect(_pihole_cfg_mgmt_lists._lists) |
         reject("in", _pihole_clients_add)
       }}'
 
