@@ -15,7 +15,7 @@ pihole_cfg_files_gravity: '/etc/pihole/gravity.db'
 # Gravity update temporary file location. Default: '/tmp'.
 pihole_cfg_files_gravity_tmp: '/tmp'
 
-# MAC → Vendor database for network table. Default: '/etc/pihole/macvendor.db'.
+# MAC ➔ Vendor database for network table. Default: '/etc/pihole/macvendor.db'.
 pihole_cfg_files_macvendor: '/etc/pihole/macvendor.db'
 
 # Network traffic PCAP capture data.

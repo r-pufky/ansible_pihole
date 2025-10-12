@@ -29,14 +29,14 @@ pihole_cfg_webserver_acl: []
 # Port Format Options: ^<+>[{IP}][:{PORT}]<o,r,s>
 #    +: Create one socket for specified port on IPv4 and IPv6. Requires no
 #       network interface specified. Alternatively, explicitly set both:
-#       +80 → 80,[::]:80.
+#       +80 ➔ 80,[::]:80.
 #    s: Encrypt traffic - required for TLS/SSL ports to serve HTTPS.
-#       80,443s → HTTP port 80, HTTPS port 443.
+#       80,443s ➔ HTTP port 80, HTTPS port 443.
 #    r: Redirect non-encrypted ports to first defined encrypted port (s).
-#       80r,443s → redirect HTTP port 80 to HTTPS 443.
+#       80r,443s ➔ redirect HTTP port 80 to HTTPS 443.
 #    o: Optional - inability to use this port is not considered an error.
 #    *: All options may be combined per port to defined complex rules:
-#       80or,443os,8080,4443s → (HTTP port 80 redirects to SSL if available,
+#       80or,443os,8080,4443s ➔ (HTTP port 80 redirects to SSL if available,
 #       443 encrypted if available, 8080 mandatory and unencrypted, 4443
 #       mandatory and encrypted).
 #
@@ -203,7 +203,7 @@ pihole_cfg_webserver_paths_webhome: '/admin/'
 #   /{PREFIX}: Prefix.
 #          '': Disabled. No proxy. (default).
 #
-# http://<ip>/pihole/admin/ → http://<ip>/admin/:
+# http://<ip>/pihole/admin/ ➔ http://<ip>/admin/:
 #   pihole_cfg_webserver_paths_prefix: '/pihole'
 #
 # Default: '' (disabled).

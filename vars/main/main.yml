@@ -7,7 +7,7 @@
 # * Hard branch Debian OS releases before starting (e.g. 13.0.0 branch).
 # * Keep a separate change log as changes are made, you will not remember.
 # * Create a default install with the latest package:
-#   * pihole -v → displays installed versions.
+#   * pihole -v ➔ displays installed versions.
 #   * Update role defaults (includes updating defaults, tasks)
 #   * Use defaults/ to remove any changed/deprecated variables.
 # * Update tests for any changes.

@@ -11,7 +11,7 @@
 # * pihole_cfg_webserver_api_totp_secret set.
 # * pihole_cfg_webserver_api_app_pwhash or pihole_cfg_webserver_api_pwhash set.
 
-# Group Management → Groups.
+# Group Management ➔ Groups.
 #
 # Special Case:
 # * Default (id:0) is automatically created on installation; however this
@@ -34,7 +34,7 @@ pihole_cfg_mgmt_groups:
     comment: 'The default group'
     enabled: true
 
-# Group Management → Clients
+# Group Management ➔ Clients
 #
 # pihole_cfg_mgmt_clients:
 #     list of dict - Client definitions.
@@ -58,7 +58,7 @@ pihole_cfg_mgmt_groups:
 # Default: [].
 pihole_cfg_mgmt_clients: []
 
-# Group Management → Domains
+# Group Management ➔ Domains
 #
 # pihole_cfg_mgmt_domains:
 #     list of dict - Domain definitions.
@@ -87,7 +87,7 @@ pihole_cfg_mgmt_clients: []
 # Default: [].
 pihole_cfg_mgmt_domains: []
 
-# Group Management → Lists
+# Group Management ➔ Lists
 #
 # TODO(bug): List deletion via API is currently broken. This is fixed in the
 #     next PiHole release. Lists will still be managed, but cannot be deleted.
