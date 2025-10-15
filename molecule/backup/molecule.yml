@@ -47,10 +47,10 @@ platforms:
     command: '/lib/systemd/systemd'
     pre_build_image: true
     published_ports:
-      - '1080:80/tcp'
-      - '1443:443/tcp'
-      - '8080:8080/tcp'
-      - '8443:8443/tcp'
+      - '80/tcp'
+      - '443/tcp'
+      - '8080/tcp'
+      - '8443/tcp'
 verifier:
   name: 'ansible'
 lint: |
