@@ -89,11 +89,6 @@ pihole_cfg_mgmt_domains: []
 
 # Group Management ➔ Lists
 #
-# TODO(bug): List deletion via API is currently broken. This is fixed in the
-#     next PiHole release. Lists will still be managed, but cannot be deleted.
-#
-#     https://github.com/pi-hole/FTL/issues/2528
-#
 # pihole_cfg_mgmt_lists:
 #     list of dict - Subscribed list definitions.
 #   - address: str - List URL.

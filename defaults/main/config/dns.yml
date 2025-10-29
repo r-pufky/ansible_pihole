@@ -16,10 +16,13 @@
 #   - '127.0.0.1#5335'
 #   - 'docker-resolver'
 #
-# Default: ['8.8.8.8', '4.4.4.4'].
+# Default: ['9.9.9.9', '149.112.112.112'].
+#
+# Reference:
+# * https://docs.quad9.net/
 pihole_cfg_dns_upstreams:
-  - '8.8.8.8'
-  - '4.4.4.4'
+  - '9.9.9.9'
+  - '149.112.112.112'
 
 # Disable deep CNAME inspection?
 #

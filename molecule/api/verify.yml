@@ -142,7 +142,7 @@
           │                                                                   │
           ├───────────────────────────────────────────────────────────────────╯
           │ Expected: 2
-          │ Recieved: {{ _pihole_api.json.clients | length }}
+          │ Received: {{ _pihole_api.json.clients | length }}
 
     - name: 'Verify | assert client 00:11:22:AA:BB:CC'
       ansible.builtin.assert:
@@ -302,17 +302,16 @@
     - name: 'Verify | assert expected number of lists'
       ansible.builtin.assert:
         quiet: true
-        that: _pihole_api.json.lists | length == 3
+        that: _pihole_api.json.lists | length == 2
         fail_msg: |
           ╭───────────────────────────────────────────────────────────────────╮
           │                                                                   │
           │                    Incorrect number of lists.                     │
           │                                                                   │
           ├───────────────────────────────────────────────────────────────────╯
-          │ Expected: 3
+          │ Expected: 2
           │ Received: {{ _pihole_api.json.lists | length }}
 
-    # TODO(bug): See lists - update tests when list deletion enabled.
     - name: 'Verify | assert list StevenBlack/hosts/master/hosts'
       ansible.builtin.assert:
         quiet: true
@@ -367,27 +366,20 @@
 
     - name:
         'Verify | assert list StevenBlack/hosts/master/data/add.2o7Net/hosts'
-      ansible.builtin.assert:
-        quiet: true
-        that:
-          - list.address ==
-            'https://raw.githubusercontent.com/StevenBlack/hosts/master/data/add.2o7Net/hosts'
-          - list.groups | length == 1
-          - list.enabled == true
-        fail_msg: |
+      when:
+        _pihole_api.json.lists |
+        selectattr("address",
+                   "==",
+                   "https://raw.githubusercontent.com/" ~
+                   "StevenBlack/hosts/master/data/add.2o7Net/hosts") |
+        length > 0
+      ansible.builtin.fail:
+        msg: |
           ╭───────────────────────────────────────────────────────────────────╮
           │                                                                   │
           │  List StevenBlack/hosts/master/data/add.2o7Net/hosts incorrect.   │
           │                                                                   │
           ├───────────────────────────────────────────────────────────────────╯
-          │ {{ list }}
-      vars:
-        list: '{{
-            _pihole_api.json.lists |
-            selectattr(
-                "address",
-                "==",
-                "https://raw.githubusercontent.com/" ~
-                "StevenBlack/hosts/master/data/add.2o7Net/hosts"
-              ) | list | first
-          }}'
+          │ list should have been removed.
+          │
+          │ {{ _pihole_api.json.lists }}

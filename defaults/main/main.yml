@@ -18,11 +18,11 @@
 #   RECOMMEND: Only increment MINOR/PATCH. Never use 'any'.
 #
 # Values:
-#   {VERSION}: TOML release to use ('v6.2.3').
+#   {VERSION}: TOML release to use ('v6.3.2').
 #         any: Do not halt on TOML updates. Very likely to break.
 #
-# Default: 'v6.2.3'.
-pihole_srv_version: 'v6.2.3'
+# Default: 'v6.3.2'.
+pihole_srv_version: 'v6.3.2'
 
 # Apply PiHole updates? Default: True.
 #
@@ -49,6 +49,16 @@ pihole_srv_gravity_update_enable: true
 #
 # Default: True.
 pihole_srv_totp_display_enable: true
+
+# Stop PiHole during configuration?
+#
+# In certain virtualization cases pre-existing PiHole installations may not
+# pickup config file changes and require the service to be restarted.
+#
+# Enabling WILL cause service interruption.
+#
+# Default: False.
+pihole_srv_service_restart_enable: false
 
 ###############################################################################
 # REST API

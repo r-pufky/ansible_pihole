@@ -145,17 +145,9 @@
             comment: 'Migrated from /etc/pihole/adlists.list'
             groups: ['Default']
             enabled: true
-          - address: '{{
-                "https://raw.githubusercontent.com/" ~
-                "StevenBlack/hosts/master/data/add.2o7Net/hosts"
-              }}'
-            type: 'block'
-            comment: 'List to delete.'
-            groups: ['Default']
-            enabled: true
           - address:
               'https://raw.githubusercontent.com/vokins/yhosts/master/hosts'
-            type: 'block'
+            type: 'allow'
             comment: 'List to modify.'
             groups: ['Default', 'modified']
             enabled: true

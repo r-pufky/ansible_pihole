@@ -95,3 +95,12 @@
   ansible.builtin.include_tasks: 'api/backup.yml'
   vars:
     label: 'pre'
+
+- name: 'Prep | stop services'
+  when: _srv_service_restart_enable.raw
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    state: 'stopped'
+  failed_when: false
+  loop:
+    - 'pihole-FTL.service'

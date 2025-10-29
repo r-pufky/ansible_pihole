@@ -110,15 +110,10 @@ lint: |
   ansible-lint .
 scenario:
   test_sequence:
-    # - 'dependency'
-    # - 'cleanup'
     - 'destroy'
     - 'syntax'
     - 'create'
     - 'prepare'
     - 'converge'
-    # - 'idempotence'  # services always restarted.
-    # - 'side_effect'
     - 'verify'
-    # - 'cleanup'
     - 'destroy'

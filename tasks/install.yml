@@ -2,9 +2,9 @@
 ###############################################################################
 # Install
 ###############################################################################
-# Installer automatically builds 'pihole-meta' package must be executed in full
-# bash shell. pihole.toml is required before installation or dialog prompts
-# will appear (even in --unattended) to set required defaults.
+# Installer automatically builds 'pihole-meta' package and must be executed in
+# full bash shell. pihole.toml is required before installation or dialog
+# prompts will appear (even in --unattended) to set required defaults.
 #
 # pihole.toml is modified in place when the service is running, injecting
 # default values and comments. A pihole.toml.broken file will appear if a

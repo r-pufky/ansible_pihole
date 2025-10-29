@@ -128,7 +128,9 @@ pihole_cfg_webserver_headers:
   - header: 'X-DNS-Prefetch-Control'
     value: 'off'
   - header: 'Content-Security-Policy'
-    value: "default-src 'self' 'unsafe-inline';"
+    value: >-
+      default-src 'self'; style-src 'self'
+      'unsafe-inline'; img-src 'self' data:;
   - header: 'X-Frame-Options'
     value: 'DENY'
   - header: 'X-XSS-Protection'

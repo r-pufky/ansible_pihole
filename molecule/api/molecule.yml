@@ -34,6 +34,7 @@ provisioner:
         pihole_srv_api_config_enable: true
         pihole_srv_update_enable: false
         pihole_srv_gravity_update_enable: false
+        pihole_srv_service_restart_enable: true
 platforms:
   - name: 'pihole-debian-13-api'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
@@ -50,15 +51,10 @@ lint: |
   ansible-lint .
 scenario:
   test_sequence:
-    # - 'dependency'
-    # - 'cleanup'
     - 'destroy'
     - 'syntax'
     - 'create'
     - 'prepare'
     - 'converge'
-    # - 'idempotence'  # services always restarted.
-    # - 'side_effect'
     - 'verify'
-    # - 'cleanup'
     - 'destroy'

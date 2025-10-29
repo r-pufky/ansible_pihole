@@ -5,13 +5,13 @@
 #
 # Updates:
 # * Hard branch Debian OS releases before starting (e.g. 13.0.0 branch).
-# * Keep a separate change log as changes are made, you will not remember.
+# * Keep a separate change log as changes are made - you will not remember.
 # * Create a default install with the latest package:
 #   * pihole -v ➔ displays installed versions.
-#   * Update role defaults (includes updating defaults, tasks)
+#   * Update role defaults (includes updating defaults, tasks).
 #   * Use defaults/ to remove any changed/deprecated variables.
 # * Update tests for any changes.
-# * Standard role validation testing: yamllint, ansible-lint, todo, noqa.
+# * Standard role validation testing.
 # * Tag with OS-TOML-ROLE version.
 #
 # Reference:
@@ -22,7 +22,7 @@ pihole_role_validate_date: '2025-09-16'
 pihole_role_validate_release: 'trixie'
 pihole_role_validate_version: 'v6.1.4'
 pihole_role_validate_web_version: 'v6.2.1'
-pihole_role_validate_toml_version: 'v6.2.3'
+pihole_role_validate_toml_version: 'v6.3.2'
 
 pihole_role_etc_dir: '/etc/pihole'
 pihole_role_install_dir: '/opt/pihole'

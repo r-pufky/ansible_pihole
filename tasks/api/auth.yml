@@ -57,7 +57,7 @@
           │                    API Authentication failed.                     │
           │                                                                   │
           ╰───────────────────────────────────────────────────────────────────╯
-          {{ _pihole.status_code }}: {{ _pihole_api.msg }}
+          {{ _pihole_api.status_code }}: {{ _pihole_api.msg }}
 
 - name: 'API | auth | create session'
   when: _pihole_cfg_webserver_api_app_pwhash.raw | length > 0
@@ -89,4 +89,4 @@
           │                    API Authentication failed.                     │
           │                                                                   │
           ╰───────────────────────────────────────────────────────────────────╯
-          {{ _pihole.status_code }}: {{ _pihole_api.msg }}
+          {{ _pihole_api.status_code }}: {{ _pihole_api.msg }}

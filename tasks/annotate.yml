@@ -19,7 +19,7 @@
   ansible.builtin.set_fact:  # noqa jinja[spacing] readability.
     _pihole_srv_version: "{{ {} | r_pufky.data.v3(
         raw=pihole_srv_version,
-        default='v6.2.3',
+        default='v6.3.2',
         hint='str',
         added='6.1.4',
         order=1
@@ -49,12 +49,20 @@
         order=4
         )
       }}"
+    _srv_service_restart_enable: "{{ {} | r_pufky.data.v3(
+        raw=pihole_srv_service_restart_enable,
+        default=false,
+        hint='bool',
+        added='6.3.2',
+        order=5
+        )
+      }}"
     _pihole_srv_api: "{{ {} | r_pufky.data.v3(
         raw=pihole_srv_api | regex_replace('/$', ''),
         default='https://localhost:443/api',
         hint='str',
         added='6.1.4',
-        order=5
+        order=6
         )
       }}"
     _pihole_srv_api_config_enable: "{{ {} | r_pufky.data.v3(
@@ -62,7 +70,7 @@
         default=false,
         hint='bool',
         added='6.1.4',
-        order=6
+        order=7
         )
       }}"
     _pihole_srv_api_validate_enable: "{{ {} | r_pufky.data.v3(
@@ -70,7 +78,7 @@
         default=false,
         hint='bool',
         added='6.1.4',
-        order=7
+        order=8
         )
       }}"
     _pihole_srv_create_user: "{{ {} | r_pufky.data.v3(
@@ -78,7 +86,7 @@
         default=true,
         hint='bool',
         added='6.1.4',
-        order=8
+        order=9
         )
       }}"
     _pihole_srv_user: "{{ {} | r_pufky.data.v3(
@@ -88,7 +96,7 @@
         hint='str',
         added='6.1.4',
         comment='Not user configurable.',
-        order=9
+        order=10
         )
       }}"
     _pihole_srv_group: "{{ {} | r_pufky.data.v3(
@@ -98,7 +106,7 @@
         hint='str',
         added='6.1.4',
         comment='Not user configurable.',
-        order=10
+        order=11
         )
       }}"
     _pihole_srv_backup_pre_enable: "{{ {} | r_pufky.data.v3(
@@ -106,7 +114,7 @@
         default=false,
         hint='bool',
         added='6.1.4',
-        order=11
+        order=12
         )
       }}"
     _pihole_srv_backup_post_enable: "{{ {} | r_pufky.data.v3(
@@ -114,7 +122,7 @@
         default=false,
         hint='bool',
         added='6.1.4',
-        order=12
+        order=13
         )
       }}"
     _pihole_srv_backup_failures_enable: "{{ {} | r_pufky.data.v3(
@@ -122,7 +130,7 @@
         default=true,
         hint='bool',
         added='6.1.4',
-        order=13
+        order=14
         )
       }}"
     _pihole_srv_backup_dest: "{{ {} | r_pufky.data.v3(
@@ -130,7 +138,7 @@
         default='group_vars/pihole/data/',
         hint='str',
         added='6.1.4',
-        order=14
+        order=15
         )
       }}"
 
@@ -1904,7 +1912,7 @@
         _pihole_cfg_webserver_headers | combine({
           "data":
             _pihole_cfg_webserver_headers.data +
-              [item.header ~ "=" ~ item.value]
+              [item.header ~ ": " ~ item.value]
         })
       }}'
   loop: '{{ _pihole_cfg_webserver_headers.raw }}'
