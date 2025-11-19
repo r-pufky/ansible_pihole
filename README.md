@@ -24,6 +24,8 @@ All ports and protocols have been defined for the role.
 Read defaults documentation. All settings not set in `pihole.toml` are
 configured via PiHole's REST API when enabled.
 
+[Additional documentation](http://r-pufky.github.io/r-pufky/docs/service/pihole).
+
 For multiple Pi-Hole nodes apply configuration in group_vars and node specific
 settings in host_vars. Singleton instances can be applied in host_vars.
 
