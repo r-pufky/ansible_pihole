@@ -19,7 +19,7 @@
   ansible.builtin.set_fact:  # noqa jinja[spacing] readability.
     _pihole_srv_version: "{{ {} | r_pufky.data.v3(
         raw=pihole_srv_version,
-        default='v6.3.2',
+        default='v6.4.1',
         hint='str',
         added='6.1.4',
         order=1
@@ -53,7 +53,7 @@
         raw=pihole_srv_service_restart_enable,
         default=false,
         hint='bool',
-        added='6.3.2',
+        added='6.4.1',
         order=5
         )
       }}"

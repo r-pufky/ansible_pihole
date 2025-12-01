@@ -18,11 +18,11 @@
 #   RECOMMEND: Only increment MINOR/PATCH. Never use 'any'.
 #
 # Values:
-#   {VERSION}: TOML release to use ('v6.3.2').
+#   {VERSION}: TOML release to use ('v6.4.1').
 #         any: Do not halt on TOML updates. Very likely to break.
 #
-# Default: 'v6.3.2'.
-pihole_srv_version: 'v6.3.2'
+# Default: 'v6.4.1'.
+pihole_srv_version: 'v6.4.1'
 
 # Apply PiHole updates? Default: True.
 #

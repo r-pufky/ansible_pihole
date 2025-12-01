@@ -20,9 +20,9 @@
 # Last time PiHole options were validated against a default configuration.
 pihole_role_validate_date: '2025-09-16'
 pihole_role_validate_release: 'trixie'
-pihole_role_validate_version: 'v6.1.4'
-pihole_role_validate_web_version: 'v6.2.1'
-pihole_role_validate_toml_version: 'v6.3.2'
+pihole_role_validate_version: 'v6.3'  # Release.
+pihole_role_validate_web_version: 'v6.2.1'  # WebUI.
+pihole_role_validate_toml_version: 'v6.4.1'  # TOML.
 
 pihole_role_etc_dir: '/etc/pihole'
 pihole_role_install_dir: '/opt/pihole'
