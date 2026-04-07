@@ -5,7 +5,7 @@ galaxy_info:
   description: 'PiHole Server'
   company: 'N/A'
   license: 'AGPL-3.0 License'
-  min_ansible_version: '2.18.0'
+  min_ansible_version: '2.20.0'
 
   platforms:
     - name: 'Debian'
