@@ -95,31 +95,31 @@ If multiple pihole servers are configured, it is highly recommended to use
 `serial: 1`. This will apply changes to pihole server individually allowing for
 changes to be applied without DNS service interruption.
 
-## Development
-Configure [environment](https://r-pufky.github.io/ansible_collection_docs/ansible/environment)
 
-Run all unit tests:
+## Development
+Configure [environment][a].
+
 ``` bash
+# Run all tests.
 molecule test --all
 ```
 
-### Releases
-Release format: **{OS}-{SERVICE}-{ROLE}**
+Testing variables:
 
-Each type inherits the versioning system used; defaulting to schematic
-versioning.
+  Variable            | type | Description
+ ---------------------|------|-------------
+  molecule_flg_inject | bool | Flag to inject files locally.
 
-`12.0.0-2.0.3-1.0.0`
+### [Releases][b]
 
-* 12.0.0 - Debian 12 (bookworm).
-* 2.0.3 - Service/app version.
-* 1.0.0 - Role version.
-
-Releases are branched on Debian releases:
-
-* **[13.x.x](https://github.com/r-pufky/ansible_pihole)**: 13 Trixie.
-* **[3.x](https://github.com/r-pufky/ansible_pihole/tree/3.x)**: Legacy role
-  PiHole 3.x, Ansible 2.11.
+  Release | Debian | Ansible | PiHole  | Notes
+ ---------|--------|---------|---------|-------
+  6.x.x   | 13     | 2.20    | v6.4.1  | Ansible 2.20, feature flags, and semantic versioning.
+  5.x.x   | 13     | 2.18    | v6.3.2  | Update to PiHole 6.3.2.
+  4.x.x   | 13     | 2.18    | v6.1.4  | Migrate to Debian Trixie.
+  3.x.x   | 12     | 2.18    | v11.0.3 | FTL-DNS configuration support.
+  2.x.x   | 12     | 2.12    | v5.17   | Redhat (experimental), conditional forwarding support.
+  1.x.x   | 12     | 2.12    | v5.8.1  | Migrate from private repository.
 
 ## Issues
 Create a bug and provide as much information as possible.
@@ -127,9 +127,16 @@ Create a bug and provide as much information as possible.
 Associate pull requests with a submitted bug.
 
 ## License
-[AGPL-3.0 License](https://www.tldrlegal.com/license/gnu-affero-general-public-license-v3-agpl-3-0)
- [(direct link)](https://github.com/r-pufky/ansible_deluge/blob/main/LICENSE)
+[AGPL-3.0 License][c] | [direct link][f]
 
 ## Author Information
-PGP Fingerprint: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9](https://keys.openpgp.org/vks/v1/by-fingerprint/466EEC2B67516C7117C85CE3A0BC35D16698BAB9)
-| [github gist](https://gist.github.com/r-pufky/a8df36977c55b5bb20829267c4c49d22)
+PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
+
+
+[a]: https://r-pufky.github.io/ansible_docs
+[b]: https://semver.org/spec/v2.0.0
+[c]: https://www.tldrlegal.com/license/gnu-affero-general-public-license-v3-agpl-3-0
+[d]: https://keys.openpgp.org/vks/v1/by-fingerprint/466EEC2B67516C7117C85CE3A0BC35D16698BAB9
+[e]: https://gist.github.com/r-pufky/a8df36977c55b5bb20829267c4c49d22
+
+[f]: https://github.com/r-pufky/ansible_pihole/blob/main/LICENSE
