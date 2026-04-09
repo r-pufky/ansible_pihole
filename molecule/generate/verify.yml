@@ -1,0 +1,10 @@
+---
+# Apply generate without runtime errors is considered success.
+
+- name: 'Verify'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | PASS ✔'
+      ansible.builtin.debug:
+        msg: '✔ TEST CASE PASSED'

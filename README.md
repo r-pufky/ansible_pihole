@@ -1,83 +1,136 @@
-# Pi-Hole
-Pi-Hole installation from public release.
+# [PiHole][h]
+PiHole installation from public release.
 
-## Requirements
-Pi-Hole hosts should be configured with static IP's per Pi-Hole documentation.
+## [Requirements][i]
+Requires [r_pufky.srv][g] galaxy-ng collection. See
+[additional documentation][m] and [reference documentation][h] for
+troubleshooting and config variables.
 
-Known Issue: [list deletion via API is currently broken](https://github.com/r-pufky/ansible_pihole/issues/49).
+Install size: ~30MB
 
-[supported platforms](https://github.com/r-pufky/ansible_pihole/blob/main/meta/main.yml)
+> PiHole hosts should be configured with static IP's per PiHole documentation.
 
 ## Role Variables
-[defaults](https://github.com/r-pufky/ansible_pihole/tree/main/defaults/main)
+Detailed variable use documented in defaults. See usage for role operation.
 
-### Ports
-All ports and protocols have been defined for the role.
+* [defaults][j] - User configurable options.
 
-[defaults/ports.yml](https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/ports.yml).
+* [ports][k] - Ports are **not** managed (defined for external use).
 
-## Dependencies
-**galaxy-ng** roles cannot be used independently. Part of
-[r_pufky.srv](https://github.com/r-pufky/ansible_collection_srv) collection.
+## Usage
+For multiple PiHole nodes apply configuration in group_vars and node specific
+settings in host_vars.
 
-## Example Playbook
-Read defaults documentation. All settings not set in `pihole.toml` are
-configured via PiHole's REST API when enabled.
+### STOP
+> Role has changed substantially from [5.x.x](#releases) release. Breaking
+> changes were made due to breaking ansible 2.19 changes and decoupling the
+> role from major PiHole releases to prevent future breaking changes.
+>
+> Existing role configuration must be re-evaluated, including copying existing
+> **pihole.toml** to the ansible controller for templated deployments. See
+> [role user defaults][j].
 
-[Additional documentation](http://r-pufky.github.io/docs/service/pihole).
+  Path              | Usage
+ -------------------|-------
+ /etc/pihole        | PiHole always deployed here.
+ /etc/pihole/conf.d | pihole_conf_d always deployed here.
 
-For multiple Pi-Hole nodes apply configuration in group_vars and node specific
-settings in host_vars. Singleton instances can be applied in host_vars.
+### Feature Flags
+Tasks are gated by feature flags and executed in the following order.
 
-Configure dual PiHole DNS servers with TOTP, REST API enable; with custom ad
-and domain blocklists; backing up configurations with teleporter after all
-changes are completed.
+  Step | Flag                      | Notes
+ ------|---------------------------|-------
+  1    | pihole_flg_generate       | Generate PiHole secret hashes and exit.
+  2    | pihole_flg_pre_backup     | Create backup before making changes?
+  3    | pihole_flg_update         | Update pihole before configuration.
+  4    | pihole_flg_api            | Enable configuration via REST API.
+  5    | pihole_flg_gravity_update | Run gravity updates after configuration.
+  6    | pihole_flg_post_backup    | Create backup after making changes?
 
-group_vars/pihole/vars/pihole.yml
+### Example Playbooks
+
+#### New Deployments (static secrets)
+Almost all PiHole deployments should configure secrets and store them on the
+ansible controller to create reproducible deployments.
+
 ``` yaml
-pihole_cfg_mgmt_lists:
-  - address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
-    type: 'block'
-    comment: 'Migrated from /etc/pihole/adlists.list'
-    groups: ['Default']
-    enabled: true
-
-pihole_cfg_mgmt_domains:
-  - domain: 'choice.microsoft.com'
-    type: 'deny'
-    kind: 'exact'
-    comment: 'ansible blacklist'
-    groups: ['Default']
-    enabled: true
-  - domain: 'events.gfe.nvidia.com'
-    type: 'deny'
-    kind: 'exact'
-    comment: 'ansible blacklist'
-    groups: ['Default']
-    enabled: true
+# Generate TOTP, WebUI, REST API hashes to include in pihole.toml sourced file.
+# Copy output and place in toml file.
+- name: 'Generate PiHole secrets.'
+  ansible.builtin.include_role:
+    name: 'r_pufky.srv.pihole'
+  vars:
+    pihole_flg_generate: true
+    pihole_cfg_pwhash: 'test'
+    pihole_cfg_app_pwhash: 'test2'
 ```
 
-host_vars/pihole.example.com/vars/pihole.yml
+A base [pihole.toml][l] file is included as a starting point for adding created
+secrets to ansible sourced pihole.toml.
+
 ``` yaml
-pihole_cfg_dns_host_force4: true
-pihole_cfg_dns_host_ipv4: '10.9.9.2'
-pihole_cfg_dns_upstreams:
-  - '10.9.9.1#53'
-  - '8.8.8.8'
-  - '4.4.4.4'
+# Deploy a pre-configured PiHole instance.
+- name: 'Generate PiHole secrets.'
+  ansible.builtin.include_role:
+    name: 'r_pufky.srv.pihole'
+  vars:
+    pihole_flg_api: true
+    pihole_srv_restart: true
+    pihole_srv_cfg: 'host_vars/pihole.example.com/pihole.toml'
+    pihole_cfg_app_pwhash: 'test2'  # Required for REST API use.
 ```
 
-host_vars/pihole2.example.com/vars/pihole.yml
+#### New Deployments (no configuration)
+
 ``` yaml
-pihole_cfg_dns_host_force4: true
-pihole_cfg_dns_host_ipv4: '10.9.9.3'
-pihole_cfg_dns_upstreams:
-  - '10.9.9.1#53'
-  - '8.8.8.8'
-  - '4.4.4.4'
+# Create a PiHole instance with Quad9 being used for DNS servers to prevent
+# external DNS logging. Passwords and TOTP secrets will be auto-generated from
+# PiHole (not recommended).
+- name: 'Create new PiHole instance.'
+  ansible.builtin.include_role:
+    name: 'r_pufky.srv.pihole'
 ```
 
-site.yml
+#### List Management
+Configure dual PiHole DNS servers with TOTP, REST API enabled; with custom ad
+and domain blocklists; backing up configurations with Teleporter after all
+changes are completed to the ansible controller.
+
+``` yaml
+- name: 'Deploy a pre-configured PiHole instance with custom blocklists.'
+  ansible.builtin.include_role:
+    name: 'r_pufky.srv.pihole'
+  vars:
+    pihole_flg_api: true
+    pihole_srv_restart: true
+    pihole_srv_cfg: 'host_vars/pihole.example.com/pihole.toml'
+    pihole_cfg_app_pwhash: 'test2'  # Required for REST API use.
+    pihole_cfg_mgmt_lists:
+      - address: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
+        type: 'block'
+        comment: 'Migrated from /etc/pihole/adlists.list'
+        groups: ['Default']
+        enabled: true
+    pihole_cfg_mgmt_domains:
+      - domain: 'choice.microsoft.com'
+        type: 'deny'
+        kind: 'exact'
+        comment: 'ansible blacklist'
+        groups: ['Default']
+        enabled: true
+      - domain: 'events.gfe.nvidia.com'
+        type: 'deny'
+        kind: 'exact'
+        comment: 'ansible blacklist'
+        groups: ['Default']
+        enabled: true
+```
+
+#### Multi-instance Deployments
+If multiple pihole servers are configured, it is highly recommended to use
+`serial: 1`. This will apply changes to pihole server individually allowing for
+changes to be applied without DNS service interruption.
+
 ``` yaml
 - name: 'pihole servers'
   hosts: 'pihole'
@@ -86,14 +139,11 @@ site.yml
   roles:
      - 'r_pufky.srv.pihole'
   vars:
-    pihole_cfg_webserver_api_pwhash: 'test'
-    pihole_cfg_webserver_api_totp_secret: 'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
-    pihole_cfg_webserver_api_app_pwhash: 'rest_api_test'
-    pihole_srv_backup_post_enable: true
+    pihole_flg_api: true
+    pihole_srv_restart: true
+    pihole_srv_cfg: 'host_vars/pihole.example.com/pihole.toml'
+    pihole_cfg_app_pwhash: 'test2'  # Required for REST API use.
 ```
-If multiple pihole servers are configured, it is highly recommended to use
-`serial: 1`. This will apply changes to pihole server individually allowing for
-changes to be applied without DNS service interruption.
 
 
 ## Development
@@ -111,6 +161,8 @@ Testing variables:
   molecule_flg_inject | bool | Flag to inject files locally.
 
 ### [Releases][b]
+Focused on service deployment with templated configuration to minimize role
+churn due to inconsistent and rapid rolling release cycle.
 
   Release | Debian | Ansible | PiHole  | Notes
  ---------|--------|---------|---------|-------
@@ -140,3 +192,10 @@ PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
 [e]: https://gist.github.com/r-pufky/a8df36977c55b5bb20829267c4c49d22
 
 [f]: https://github.com/r-pufky/ansible_pihole/blob/main/LICENSE
+[g]: https://github.com/r-pufky/ansible_collection_srv
+[h]: https://docs.PiHole.net
+[i]: https://github.com/r-pufky/ansible_pihole/blob/main/meta/main.yml
+[j]: https://github.com/r-pufky/ansible_pihole/tree/main/defaults/main/main.yml
+[k]: https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/ports.yml
+[l]: https://github.com/r-pufky/ansible_pihole/blob/main/templates/default/pihole.toml
+[m]: https://r-pufky.github.io/docs/service/pihole

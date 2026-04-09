@@ -1,0 +1,81 @@
+---
+###############################################################################
+# Configure Services
+###############################################################################
+# PiHole service modifies pihole.toml in place, injecting default values and
+# comments. A pihole.toml.broken file will appear if a rendered file is
+# incorrect (variable values or syntax). All other config options are now
+# stored in the database and accessed via the REST API.
+#
+# Filetree returns a dict (instead of a list of dict) for one element. Use
+# query to guarantee a list result.
+
+# Stop service here as generate step should will not restart service.
+- name: 'Prep | systemd | stop pihole-FTL'
+  when: pihole__srv._restart
+  ansible.builtin.systemd:
+    name: 'pihole-FTL.service'
+    state: 'stopped'
+  failed_when: false
+
+- name: '{{ "Config | filesystem | set " ~ pihole___app._conf_d }}'
+  when: pihole__srv._conf_d | length > 0
+  block:
+    - name: 'Config | filetree | set managed directories'
+      ansible.builtin.file:
+        path: '{{ pihole___app._conf_d ~ "/" ~ item.path }}'
+        owner: '{{ pihole__srv._user }}'
+        group: '{{ pihole__srv._group }}'
+        mode: '0750'
+        state: 'directory'
+      loop: '{{ query("community.general.filetree", pihole__srv._conf_d) }}'
+      loop_control:
+        label: '{{ item.path }}'
+      when: item.state == 'directory'
+
+    - name: 'Config | filetree | set managed files'
+      ansible.builtin.template:
+        src: '{{ item.src }}'
+        dest: '{{ pihole___app._conf_d ~ "/" ~ item.path }}'
+        owner: '{{ pihole__srv._user }}'
+        group: '{{ pihole__srv._group }}'
+        mode: '0640'
+      loop: '{{ query("community.general.filetree", pihole__srv._conf_d) }}'
+      loop_control:
+        label: '{{ item.path }}'
+      when: item.state == 'file'
+
+    - name: 'Config | filesystem | query remote files'
+      ansible.builtin.find:
+        paths: '{{ pihole___app._conf_d }}'
+        file_type: 'any'
+        hidden: true
+        recurse: true
+      register: pihole__remote
+
+    - name: 'Config | filetree | remove unmanaged files and directories'
+      ansible.builtin.file:
+        path: '{{ item.path }}'
+        state: 'absent'
+      loop: '{{ pihole__remote.files | sort(attribute="path", reverse=true) }}'
+      loop_control:
+        label: '{{ item.path }}'
+      when: >
+        item.path not in
+        (
+          query("community.general.filetree", pihole__srv._conf_d) |
+          map(attribute='path') |
+          map('regex_replace', '^', pihole___app._conf_d ~ "/") | list
+        )
+
+- name: '{{ "Config | filesystem | set " ~ pihole___app._cfg }}'
+  ansible.builtin.template:
+    src: '{{
+        pihole__srv._cfg
+        if pihole__srv._cfg | length > 0 else
+        "templates/default/pihole.toml"
+      }}'
+    dest: '{{ pihole___app._cfg }}'
+    owner: '{{ pihole__srv._user }}'
+    group: '{{ pihole__srv._group }}'
+    mode: '0640'  # PiHole enforces 0644.

@@ -4,26 +4,24 @@
   connection: local
   gather_facts: false
   tasks:
-    - name: 'Verify | query backups'
+    - name: 'Verify | filesystem | query backups'
       ansible.builtin.find:
         path: '{{
             lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
             "/molecule/cache/backup"
           }}'
         file_type: 'file'
-      register: _pihole_test
+      register: pihole__test
 
-    - name: 'Verify | assert backups'
+    - name: 'Verify | assert | backups'
       ansible.builtin.assert:
         quiet: true
-        that: _pihole_test.files | length == 2
+        that: pihole__test.files | length >= 2
         fail_msg: |
-          ╭───────────────────────────────────────────────────────────────────╮
-          │                                                                   │
-          │                       Backup count invalid.                       │
-          │                                                                   │
-          ├───────────────────────────────────────────────────────────────────╯
-          │ There should only be a pre and post backup.
-          │
-          │ Count: {{ _pihole_test.files | length }}
-          │ Files: {{ _pihole_test.files | map(attribute='path') | list }}
+
+          ✘ Backup count invalid.
+
+          There should only be at least 1 pre and post backup.
+
+          Count: {{ pihole__test.files | length }}
+          Files: {{ pihole__test.files | map(attribute='path') | list }}

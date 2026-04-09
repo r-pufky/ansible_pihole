@@ -1,0 +1,126 @@
+---
+###############################################################################
+# Generate Secrets
+###############################################################################
+# Generate secrets required by service but not provided by integrated service
+# CLI options. Display to screen with instructions and exit.
+
+- name: 'Generate | filesystem | set service directories'
+  ansible.builtin.file:
+    path: '{{ pihole___balloon._opt_d }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+    state: 'directory'
+
+- name: 'Generate | cmd | hash TOTP secret'
+  delegate_to: 'localhost'
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    head /dev/urandom | head -c 20 | base64 | base32 | cut -c 1-32
+  changed_when: false
+  register: pihole__totp
+
+- name: 'Generate | fact | update TOTP secret'
+  ansible.builtin.set_fact:
+    pihole__cfg: "{{ pihole__cfg | r_pufky.data.v3(
+
+            _totp=pihole__totp.stdout[:32],
+          ) }}"
+
+- name: 'Generate | cmd | generate QR code'
+  ansible.builtin.command: 'qrencode -t ansiutf8 "{{ pihole__cfg._totp }}"'
+  changed_when: false
+  register: pihole__qr
+
+# Balloon Password Hashing
+###############################################################################
+# Install balloon password hashing helper libraries for PiHole configuration.
+# Effectively this is a bare git checkout with convenience wrappers.
+#
+# Keys are currently published without user ID's, which makes verification
+# impossible.
+#
+# Reference:
+# * https://github.com/nachonavarro/balloon-hashing
+# * https://github.com/nachonavarro/balloon-hashing/issues/16
+
+- name: '{{ "Generate | filesystem | query " ~ pihole___balloon._py }}'
+  ansible.builtin.stat:
+    path: '{{ pihole___balloon._py }}'
+  register: pihole__balloon
+
+- name: 'Generate | git | 🗘 clone ballon-hashing (~1 minute) 🗘'
+  when: not pihole__balloon.stat.exists
+  ansible.builtin.debug:
+    msg: 'balloon-hashing is being cloned (~1 minute).'
+
+- name: '{{ "Generate | git | clone " ~ pihole___balloon._url }}'
+  when: >
+    not pihole__balloon.stat.exists and
+    not (molecule_flg_inject | default(false))
+  ansible.builtin.git:
+    repo: '{{ pihole___balloon._url }}'
+    dest: '{{ pihole___balloon._opt_d }}'
+    update: false  # noqa latest[git] no versioned releases.
+    clone: true
+  register: pihole__download
+  until: pihole__download is succeeded
+  retries: 3
+  delay: 2
+
+- name: '{{ "Generate | filesystem | set " ~ pihole___app._pihole_hash }}'
+  ansible.builtin.template:
+    src: 'templates/etc/pihole_hash.py.j2'
+    dest: '{{ pihole___app._pihole_hash }}'
+    owner: '{{ pihole__srv._user }}'
+    group: '{{ pihole__srv._group }}'
+    mode: '0750'
+
+- name: 'Generate | cmd | pwhash'
+  ansible.builtin.shell:
+    '{{ "/etc/pihole/pihole_hash.py " ~ pihole__cfg._pwhash }}'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
+  register: pihole__web_hash
+
+- name: 'Generate | cmd | app_pwhash'
+  ansible.builtin.shell:
+    '{{ "/etc/pihole/pihole_hash.py " ~ pihole__cfg._app_pwhash }}'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
+  register: pihole__app_hash
+
+- name: 'Generate | fact | update hashes'
+  ansible.builtin.set_fact:
+    pihole__cfg: "{{ pihole__cfg | r_pufky.data.v3(
+
+        _pwhash=pihole__web_hash.stdout,
+        _app_pwhash=pihole__app_hash.stdout,
+      ) }}"
+
+# Display
+###############################################################################
+- name: 'Generate | 🛈 Authenticator Setup 🛈'
+  ansible.builtin.debug:
+    msg: |
+
+      🛈 Scan the QR code or manually enter the TOTP hash to setup 2FA.
+
+      {{ pihole__qr.stdout }}
+      {{ pihole__cfg._totp }}
+
+- name: 'Generate | 🛈 Hashes 🛈'
+  ansible.builtin.debug:
+    msg: |
+
+      🛈 Add these to your pihole.toml file.
+
+      totp_secret: {{ pihole__cfg._totp }}
+           pwhash: {{ pihole__cfg._pwhash }}
+       app_pwhash: {{ pihole__cfg._app_pwhash }}
+
+- name: 'Generate | success ✔'
+  ansible.builtin.meta: 'end_host'

@@ -2,7 +2,7 @@
 ###############################################################################
 # API
 ###############################################################################
-# Test all support REST API interactions.
+# Test all supported REST API interactions.
 #
 # First apply role with all group management options defined; then run role
 # again on top of this state to check group management deletions, insertions,
@@ -26,17 +26,16 @@ provisioner:
   inventory:
     group_vars:
       all:
-        pihole_cfg_webserver_api_pwhash: 'test'
-        pihole_cfg_webserver_api_totp_secret:
-          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
-        pihole_cfg_webserver_api_app_pwhash: 'test2'
-        pihole_cfg_debug_api: true
-        pihole_srv_api_config_enable: true
-        pihole_srv_update_enable: false
-        pihole_srv_gravity_update_enable: false
-        pihole_srv_service_restart_enable: true
+        molecule_flg_inject: true
+        pihole_flg_api: true
+        pihole_srv_restart: true
+        pihole_srv_cfg: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/files/pihole.toml.api"
+          }}'
+        pihole_cfg_app_pwhash: 'test2'
 platforms:
-  - name: 'pihole-debian-13-api'
+  - name: 'pihole-api'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:
@@ -45,10 +44,6 @@ platforms:
     pre_build_image: true
 verifier:
   name: 'ansible'
-lint: |
-  set -e
-  yamllint .
-  ansible-lint .
 scenario:
   test_sequence:
     - 'destroy'

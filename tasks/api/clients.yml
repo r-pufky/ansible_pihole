@@ -12,82 +12,84 @@
 
 - name: 'API | clients | query all'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/clients" }}'
+    url: '{{ pihole__cfg._api_clients }}'
     method: 'GET'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [200]
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  register: _pihole_api
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  register: pihole__api
 
 - name: 'API | clients | parse added, deleted clients'
   ansible.builtin.set_fact:
-    _pihole_clients_del: '{{
-        _pihole_api.json.clients | map(attribute="client") | list |
-        difference(_pihole_cfg_mgmt_clients._clients)
+    pihole__clients_del: '{{
+        pihole__api.json.clients | map(attribute="client") | list |
+        difference(pihole__cfg._mgmt_clients | map(attribute="client") | list)
       }}'
-    _pihole_clients_add: '{{
-        _pihole_cfg_mgmt_clients._clients |
-        difference(_pihole_api.json.clients | map(attribute="client") | list)
+    pihole__clients_add: '{{
+        pihole__cfg._mgmt_clients | map(attribute="client") | list |
+        difference(pihole__api.json.clients | map(attribute="client") | list)
       }}'
 
 - name: 'API | clients | parse modified clients'
   ansible.builtin.set_fact:
-    _pihole_clients_mod: '{{
-        _pihole_api.json.clients | map(attribute="client") | list |
-        intersect(_pihole_cfg_mgmt_clients._clients) |
-        reject("in", _pihole_clients_add)
+    pihole__clients_mod: '{{
+        pihole__api.json.clients | map(attribute="client") | list |
+        intersect(pihole__cfg._mgmt_clients | map(attribute="client") | list) |
+        reject("in", pihole__clients_add)
       }}'
 
 - name: 'API | clients | remove non-managed client'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/clients/" ~ item | urlencode }}'
+    url: '{{ pihole__cfg._api_clients ~ "/" ~ item | urlencode }}'
     method: 'DELETE'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [204]
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  loop: '{{ _pihole_clients_del }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  loop: '{{ pihole__clients_del }}'
 
 - name: 'API | clients | add managed client'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/clients" }}'
+    url: '{{ pihole__cfg._api_clients }}'
     method: 'POST'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [201]
     body:
       client: '{{ client.client }}'
       comment: '{{ client.comment }}'
-      groups: '{{ client.groups | map("extract", _pihole.groups) | list }}'
+      groups:
+        '{{ client.groups | map("extract", pihole__cfg._rest_groups) | list }}'
     body_format: 'json'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
   vars:
     client: '{{
-        _pihole_cfg_mgmt_clients.raw |
+        pihole__cfg._mgmt_clients |
         selectattr("client", "==", item) | list | first
       }}'
-  loop: '{{ _pihole_clients_add }}'
+  loop: '{{ pihole__clients_add }}'
 
 - name: 'API | clients | update managed client'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/clients/" ~ client.client | urlencode }}'
+    url: '{{ pihole__cfg._api_clients ~ "/" ~ client.client | urlencode }}'
     method: 'PUT'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [200]
     body:
       comment: '{{ client.comment }}'
-      groups: '{{ client.groups | map("extract", _pihole.groups) | list }}'
+      groups:
+        '{{ client.groups | map("extract", pihole__cfg._rest_groups) | list }}'
     body_format: 'json'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
   vars:
     client: '{{
-        _pihole_cfg_mgmt_clients.raw |
+        pihole__cfg._mgmt_clients |
         selectattr("client", "==", item) | list | first
       }}'
-  loop: '{{ _pihole_clients_mod }}'
+  loop: '{{ pihole__clients_mod }}'

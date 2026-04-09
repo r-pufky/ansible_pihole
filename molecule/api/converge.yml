@@ -3,7 +3,7 @@
   hosts: 'all'
   gather_facts: false
   tasks:
-    - name: 'Converge | apply r_pufky.srv.pihole (initial state)'
+    - name: 'Converge | roles | r_pufky.srv.pihole (initial state)'
       ansible.builtin.include_role:
         name: 'r_pufky.srv.pihole'
       vars:
@@ -87,7 +87,8 @@
             comment: 'List to modify.'
             groups: ['Default']
             enabled: true
-    - name: 'Converge | apply r_pufky.srv.pihole (final state)'
+
+    - name: 'Converge | roles | r_pufky.srv.pihole (final state)'
       ansible.builtin.include_role:
         name: 'r_pufky.srv.pihole'
       vars:

@@ -1,11 +1,12 @@
 ---
 ###############################################################################
-# Assert Requirements
+# Generate
 ###############################################################################
-# Verify assertion logic correctly prevents role from executing.
+# Generate creates hashes successfully and exits role.
 #
 # Tests:
-# * Test all assertions are triggered correctly.
+# * totp_secret, pwhash, app_pwhash are generated.
+# * Role exits.
 
 dependency:
   name: 'galaxy'
@@ -19,8 +20,15 @@ provisioner:
       callback_whitelist: 'profile_tasks, timer, yaml'
     ssh_connection:
       pipelining: false
+  inventory:
+    group_vars:
+      all:
+        pihole_flg_generate: true
+        molecule_flg_inject: true
+        pihole_cfg_pwhash: 'test'
+        pihole_cfg_app_pwhash: 'test2'
 platforms:
-  - name: 'pihole-debian-13-assert_requirements'
+  - name: 'pihole-generate'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:
@@ -29,15 +37,12 @@ platforms:
     pre_build_image: true
 verifier:
   name: 'ansible'
-lint: |
-  set -e
-  yamllint .
-  ansible-lint .
 scenario:
   test_sequence:
     - 'destroy'
     - 'syntax'
     - 'create'
+    - 'prepare'
     - 'converge'
     - 'verify'
     - 'destroy'

@@ -11,7 +11,7 @@
 # * https://github.com/r-pufky/ansible_pihole/issues/13
 # * https://docs.pi-hole.net/main/prerequisites/?h=port#ports
 
-pihole_srv_ports:
+pihole_ports:
   - proto: 'udp'
     from_ip: 'any'
     to_port: 53

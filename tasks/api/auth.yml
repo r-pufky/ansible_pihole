@@ -3,90 +3,76 @@
 # API Auth
 ###############################################################################
 # Authenticate session to PiHole REST API.
-#
-# Generates:
-#   _pihole.token: str - validated auth token.
-#   _pihole.csrf: str - CSRF session token.
 
 - name: 'API | auth | 2FA token'
-  when: _pihole_cfg_webserver_api_app_pwhash.raw | length == 0
+  when: pihole__cfg._app_pwhash | length == 0
   block:
-    - name: 'API | auth | ACTION REQUIRED 🗘'
+    - name: 'API | auth | ⚠ 2FA Token Required ⚠'
       ansible.builtin.debug:
         msg: |
-          ╭───────────────────────────────────────────────────────────────────╮
-          │                                                                   │
-          │                        2FA Token Required.                        │
-          │                                                                   │
-          ├───────────────────────────────────────────────────────────────────╯
-          │ Enter token below (no time limit).
 
-    - name: 'API | auth | 2FA token | read token'
+          🗘 Enter 2FA token below (no time limit).
+
+    - name: 'API | auth | 2FA token | read'
       ansible.builtin.pause:
         echo: true
-      register: _pihole_totp
+      register: pihole__totp
 
     - name: 'API | auth | 2FA token | create session'
-      block:
-        - name: 'API | auth | 2FA token | create session'
-          ansible.builtin.uri:
-            url: '{{ _pihole_srv_api.raw ~ "/auth" }}'
-            method: 'POST'
-            status_code: [200]
-            body: '{
-                "password": "{{ _pihole_cfg_webserver_api_pwhash.raw }}",
-                "totp": {{ _pihole_totp.user_input | int }}
-              }'
-            body_format: 'json'
-            validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-          register: _pihole_api
+      ansible.builtin.uri:
+        url: '{{ pihole__cfg._api_auth }}'
+        method: 'POST'
+        status_code: [200]
+        body: '{
+            "password": "{{ pihole__srv.pwhash }}",
+            "totp": {{ pihole__totp.user_input | int }}
+          }'
+        body_format: 'json'
+        validate_certs: '{{ pihole__cfg._api_validate }}'
+      register: pihole__api
 
-    - name: 'API | auth | cache token'
+    - name: 'API | fact | cache token'
       ansible.builtin.set_fact:
-        _pihole: '{{
-            _pihole |
-            combine({"token": _pihole_api.json.session.sid,
-                     "csrf": _pihole_api.json.session.csrf})
-          }}'
+        pihole__cfg: "{{ pihole__cfg | r_pufky.data.v3(
+
+            _token=pihole__api.json.session.sid,
+            _csrf=pihole__api.json.session.csrf,
+          ) }}"
   rescue:
-    - name: 'API | auth | FAILED ⚠'
+    - name: 'API | auth | ⚠ FAILED ⚠'
       ansible.builtin.fail:
         msg: |
-          ╭───────────────────────────────────────────────────────────────────╮
-          │                                                                   │
-          │                    API Authentication failed.                     │
-          │                                                                   │
-          ╰───────────────────────────────────────────────────────────────────╯
-          {{ _pihole_api.status_code }}: {{ _pihole_api.msg }}
+
+          ✘ API Authentication failed.
+
+          {{ pihole__api.status_code }}: {{ pihole__api.msg }}
 
 - name: 'API | auth | create session'
-  when: _pihole_cfg_webserver_api_app_pwhash.raw | length > 0
+  when: pihole__cfg._app_pwhash | length > 0
   block:
     - name: 'API | auth | create session'
       ansible.builtin.uri:
-        url: '{{ _pihole_srv_api.raw ~ "/auth" }}'
+        url: '{{ pihole__cfg._api_auth }}'
         method: 'POST'
         status_code: [200]
         body:
-          password: '{{ _pihole_cfg_webserver_api_app_pwhash.raw }}'
+          password: '{{ pihole__cfg._app_pwhash }}'
         body_format: 'json'
-        validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-      register: _pihole_api
+        validate_certs: '{{ pihole__cfg._api_validate }}'
+      register: pihole__api
 
     - name: 'API | auth | cache tokens'
       ansible.builtin.set_fact:
-        _pihole: '{{
-            _pihole |
-            combine({"token": _pihole_api.json.session.sid,
-                     "csrf": _pihole_api.json.session.csrf})
-          }}'
+        pihole__cfg: "{{ pihole__cfg | r_pufky.data.v3(
+
+            _token=pihole__api.json.session.sid,
+            _csrf=pihole__api.json.session.csrf,
+          ) }}"
   rescue:
-    - name: 'API | auth | FAILED ⚠'
+    - name: 'API | auth | ⚠ FAILED ⚠'
       ansible.builtin.fail:
         msg: |
-          ╭───────────────────────────────────────────────────────────────────╮
-          │                                                                   │
-          │                    API Authentication failed.                     │
-          │                                                                   │
-          ╰───────────────────────────────────────────────────────────────────╯
-          {{ _pihole_api.status_code }}: {{ _pihole_api.msg }}
+
+          ✘ API Authentication failed.
+
+          {{ pihole__api.status_code }}: {{ pihole__api.msg }}

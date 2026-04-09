@@ -55,9 +55,9 @@ def random_salt(seed: str = None) -> str:
 def pihole_hash(
     pw: str,
     pw_salt: str,
-    space_cost: int = {{ pihole_role_hash_space | default(1024) }},
-    time_cost: int = {{ pihole_role_hash_time | default(32) }},
-    version: int = {{ pihole_role_hash_version | default(1) }}
+    space_cost: int = {{ pihole___balloon._space | default(1024) }},
+    time_cost: int = {{ pihole___balloon._time | default(32) }},
+    version: int = {{ pihole___balloon._version | default(1) }}
 ) -> str:
     """
     Generate BALLOON-SHA256 hash for use in PiHole.

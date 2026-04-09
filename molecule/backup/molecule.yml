@@ -25,38 +25,27 @@ provisioner:
   inventory:
     group_vars:
       all:
-        pihole_srv_backup_pre_enable: true
-        pihole_srv_backup_post_enable: true
-        pihole_srv_backup_failures_enable: true
-        pihole_srv_backup_dest: '{{
+        molecule_flg_inject: true
+        pihole_flg_pre_backup: true
+        pihole_flg_post_backup: true
+        pihole_flg_api: true
+        pihole_srv_restart: true
+        pihole_srv_cfg: '{{
             lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
-            "/molecule/cache/backup"
+            "/molecule/files/pihole.toml.api"
           }}'
-        pihole_cfg_webserver_api_pwhash: 'test'
-        pihole_cfg_webserver_api_totp_secret:
-          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
-        pihole_cfg_webserver_api_app_pwhash: 'test2'
-        pihole_cfg_debug_api: true
-        pihole_srv_api_config_enable: true
+        pihole_cfg_backup: '/tmp/ansible_pihole_test'
+        pihole_cfg_app_pwhash: 'test2'
 platforms:
-  - name: 'pihole-debian-13-backup'
+  - name: 'pihole-backup'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:
       - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     command: '/lib/systemd/systemd'
     pre_build_image: true
-    published_ports:
-      - '80/tcp'
-      - '443/tcp'
-      - '8080/tcp'
-      - '8443/tcp'
 verifier:
   name: 'ansible'
-lint: |
-  set -e
-  yamllint .
-  ansible-lint .
 scenario:
   test_sequence:
     - 'destroy'

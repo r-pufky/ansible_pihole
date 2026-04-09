@@ -18,42 +18,41 @@
 
 - name: 'API | backup | filename'
   ansible.builtin.set_fact:
-    _pihole_backup_dest:
-      '{{ "/tmp/" ~ ansible_date_time.iso8601 ~ "-" ~ label ~ ".zip" }}'
+    pihole__backup: '{{
+        "/tmp/" ~ ansible_facts["date_time"].iso8601 ~ "-" ~ label ~ ".zip"
+      }}'
 
 - name: 'API | backup | run'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/teleporter" }}'
-    dest: '{{ _pihole_backup_dest }}'
+    url: '{{ pihole__cfg._api_teleporter }}'
+    dest: '{{ pihole__backup }}'
     owner: 'root'
     group: 'root'
     mode: '0640'
     method: 'GET'
     status_code: [200, 401]
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  register: _pihole_api
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  register: pihole__api
 
-- name: 'API | backup | check status'
-  when: _pihole_api.status == 401 and _pihole_srv_backup_failures_enable.raw
+- name: 'API | backup | ⚠ FAILED ⚠'
+  when: pihole__api.status == 401
   ansible.builtin.fail:
     msg: |
-      ╭───────────────────────────────────────────────────────────────────╮
-      │                                                                   │
-      │                          Backup failed.                           │
-      │                                                                   │
-      ╰───────────────────────────────────────────────────────────────────╯
-      {{ _pihole_api.msg }}
 
-- name: 'API | backup | retrieve {{ _pihole_backup_dest }}'
+      ✘ Backup failed.
+
+      {{ pihole__api.msg }}
+
+- name: '{{ "API | backup | retrieve " ~ pihole__backup }}'
   ansible.builtin.fetch:
-    src: '{{ _pihole_backup_dest }}'
-    dest: '{{ _pihole_srv_backup_dest.raw }}'
+    src: '{{ pihole__backup }}'
+    dest: '{{ pihole__cfg._backup }}'
     flat: true
 
 - name: 'API | backup | cleanup'
   ansible.builtin.file:
-    path: '{{ _pihole_backup_dest }}'
+    path: '{{ pihole__backup }}'
     state: 'absent'

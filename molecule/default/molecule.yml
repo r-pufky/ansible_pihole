@@ -6,8 +6,8 @@
 #
 # Tests:
 # * All default options (unset defaults set with options) set.
-# * Raw web password works with balloon hashing.
-# * Raw app password works with balloon hashing.
+# * Example conf.d is deployed with no runtime errors.
+# * /etc/pihole/pihole.toml.broken does NOT exist (verified in start.yml).
 
 dependency:
   name: 'galaxy'
@@ -24,14 +24,13 @@ provisioner:
   inventory:
     group_vars:
       all:
-        pihole_cfg_webserver_api_pwhash: 'test'
-        pihole_cfg_webserver_api_totp_secret:
-          'CLAH6OEOV52XVYTKHGKBERP42IUZHY4D'
-        pihole_cfg_webserver_api_app_pwhash: 'test2'
-        pihole_cfg_debug_api: true
-        pihole_srv_api_config_enable: true
+        molecule_flg_inject: true
+        pihole_srv_conf_d: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/conf.d"
+          }}'
 platforms:
-  - name: 'pihole-debian-13-default'
+  - name: 'pihole-default'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:
@@ -45,10 +44,6 @@ platforms:
       - '8443:8443/tcp'
 verifier:
   name: 'ansible'
-lint: |
-  set -e
-  yamllint .
-  ansible-lint .
 scenario:
   test_sequence:
     - 'destroy'

@@ -15,53 +15,54 @@
 
 - name: 'API | domains | query all'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/domains" }}'
+    url: '{{ pihole__cfg._api_domains }}'
     method: 'GET'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [200]
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  register: _pihole_api
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  register: pihole__api
 
 - name: 'API | domains | parse domain IDs'
   ansible.builtin.set_fact:
-    _pihole_domains_id: '{{ _pihole_api.json.domains }}'
+    pihole__domains_id: '{{ pihole__api.json.domains }}'
 
 - name: 'API | domains | remove'
   ansible.builtin.uri:
     url: '{{
-        _pihole_srv_api.raw ~ "/domains/" ~
-        item.type ~ "/" ~ item.kind ~ "/" ~ item.domain | urlencode
+        pihole__cfg._api_domains ~ "/" ~ item.type ~ "/" ~ item.kind ~ "/" ~
+        item.domain | urlencode
       }}'
     method: 'DELETE'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [204]
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  loop: '{{ _pihole_domains_id }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  loop: '{{ pihole__domains_id }}'
   loop_control:
     label: '{{ item.domain }}'
 
 - name: 'API | domains | add managed domain'
   ansible.builtin.uri:
     url: '{{
-        _pihole_srv_api.raw ~ "/domains/" ~ item.type ~ "/" ~ item.kind |
+        pihole__cfg._api_domains ~ "/" ~ item.type ~ "/" ~ item.kind |
         urlencode
       }}'
     method: 'POST'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [201]
     body:
       domain: '{{ item.domain }}'
       comment: '{{ item.comment }}'
-      groups: '{{ item.groups | map("extract", _pihole.groups) | list }}'
+      groups:
+        '{{ item.groups | map("extract", pihole__cfg._rest_groups) | list }}'
       enabled: '{{ item.enabled }}'
     body_format: 'json'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  loop: '{{ _pihole_cfg_mgmt_domains.raw }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  loop: '{{ pihole__cfg._mgmt_domains }}'
   loop_control:
     label: '{{ item.domain }}'

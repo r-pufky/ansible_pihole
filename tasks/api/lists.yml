@@ -13,110 +13,110 @@
 
 - name: 'API | lists | query all'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/lists" }}'
+    url: '{{ pihole__cfg._api_lists }}'
     method: 'GET'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [200]
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
-  register: _pihole_api
+    validate_certs: '{{ pihole__cfg._api_validate }}'
+  register: pihole__api
 
 - name: 'API | domains | parse lists'
   ansible.builtin.set_fact:
-    _pihole_lists: '{{ _pihole_api.json.lists }}'
+    pihole__lists: '{{ pihole__api.json.lists }}'
 
 - name: 'API | lists | parse existing lists'
   ansible.builtin.set_fact:
-    _pihole_lists_del: '{{
-        _pihole_lists | map(attribute="address") | list |
-        difference(_pihole_cfg_mgmt_lists._lists)
+    pihole__lists_del: '{{
+        pihole__lists | map(attribute="address") | list |
+        difference(pihole__cfg._mgmt_lists | map(attribute="address") | list)
       }}'
-    _pihole_lists_add: '{{
-        _pihole_cfg_mgmt_lists._lists |
-        difference(_pihole_lists | map(attribute="address") | list)
+    pihole__lists_add: '{{
+        pihole__cfg._mgmt_lists | map(attribute="address") | list |
+        difference(pihole__lists | map(attribute="address") | list)
       }}'
 
 - name: 'API | lists | parse modified lists'
   ansible.builtin.set_fact:
-    _pihole_lists_mod: '{{
-        _pihole_lists | map(attribute="address") | list |
-        intersect(_pihole_cfg_mgmt_lists._lists) |
-        reject("in", _pihole_clients_add)
+    pihole__lists_mod: '{{
+        pihole__lists | map(attribute="address") | list |
+        intersect(pihole__cfg._mgmt_lists | map(attribute="address") | list) |
+        reject("in", pihole__lists_add)
       }}'
 
 - name: 'API | lists | remove non-managed list'
   ansible.builtin.uri:
     url: '{{
-        _pihole_srv_api.raw ~ "/lists/" ~
+        pihole__cfg._api_lists ~ "/" ~
         (list.address | urlencode | regex_replace("/", "%2F")) ~
         "?type=" ~ list.type
       }}'
     method: 'DELETE'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [204]
     body:
-      sid: '{{ _pihole.token }}'
-      csrf: '{{ _pihole.csrf }}'
+      sid: '{{ pihole__cfg._token }}'
+      csrf: '{{ pihole__cfg._csrf }}'
     body_format: 'json'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
   vars:
-    list: '{{
-        _pihole_lists |
-        selectattr("address", "==", item) | list | first
-      }}'
-  loop: '{{ _pihole_lists_del }}'
+    list:
+      '{{ pihole__lists | selectattr("address", "==", item) | list | first }}'
+  loop: '{{ pihole__lists_del }}'
 
 - name: 'API | lists | add managed list'
   ansible.builtin.uri:
-    url: '{{ _pihole_srv_api.raw ~ "/lists" ~ "?type=" ~ list.type }}'
+    url: '{{ pihole__cfg._api_lists ~ "?type=" ~ list.type }}'
     method: 'POST'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [201]
     body:
       address: '{{ list.address }}'
       type: '{{ list.type }}'
       comment: '{{ list.comment }}'
-      groups: '{{ list.groups | map("extract", _pihole.groups) | list }}'
+      groups:
+        '{{ list.groups | map("extract", pihole__cfg._rest_groups) | list }}'
       enabled: '{{ list.enabled }}'
     body_format: 'json'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
   vars:
     list: '{{
-        _pihole_cfg_mgmt_lists.raw |
+        pihole__cfg._mgmt_lists |
         selectattr("address", "==", item) | list | first
       }}'
-  loop: '{{ _pihole_lists_add }}'
+  loop: '{{ pihole__lists_add }}'
 
 - name: 'API | lists | update managed list'
   ansible.builtin.uri:
     url: '{{
-        _pihole_srv_api.raw ~ "/lists/" ~
+        pihole__cfg._api_lists ~ "/" ~
         (current.address | urlencode | regex_replace("/", "%2F")) ~
         "?type=" ~ current.type
       }}'
     method: 'PUT'
     headers:
-      X-FTL-SID: '{{ _pihole.token }}'
-      X-CSRF-TOKEN: '{{ _pihole.csrf }}'
+      X-FTL-SID: '{{ pihole__cfg._token }}'
+      X-CSRF-TOKEN: '{{ pihole__cfg._csrf }}'
     status_code: [200]
     body:
       comment: '{{ update.comment }}'
       type: '{{ update.type }}'
-      groups: '{{ update.groups | map("extract", _pihole.groups) | list }}'
+      groups:
+        '{{ update.groups | map("extract", pihole__cfg._rest_groups) | list }}'
       enabled: '{{ update.enabled }}'
     body_format: 'json'
-    validate_certs: '{{ _pihole_srv_api_validate_enable.raw }}'
+    validate_certs: '{{ pihole__cfg._api_validate }}'
   vars:
     current: '{{
-        _pihole_lists | selectattr("address", "==", item) | list | first
+        pihole__lists | selectattr("address", "==", item) | list | first
       }}'
     update: '{{
-        _pihole_cfg_mgmt_lists.raw |
+        pihole__cfg._mgmt_lists |
         selectattr("address", "==", item) | list | first
       }}'
-  loop: '{{ _pihole_lists_mod }}'
+  loop: '{{ pihole__lists_mod }}'

@@ -1,25 +1,32 @@
 ---
-- name: 'Assert'
-  ansible.builtin.include_tasks: 'assert.yml'
-- name: 'Annotate'
-  ansible.builtin.include_tasks: 'annotate.yml'
 - name: 'Prep'
   ansible.builtin.include_tasks: 'prep.yml'
 
-- name: 'TOTP'
-  when: _pihole_cfg_webserver_api_totp_secret.raw | length > 0
-  ansible.builtin.include_tasks: 'generator/totp.yml'
+- name: 'Generate'
+  when: pihole_flg_generate
+  ansible.builtin.include_tasks: 'generate.yml'
 
-- name: 'Balloon'
-  ansible.builtin.include_tasks: 'generator/balloon.yml'
+- name: 'Config'
+  ansible.builtin.include_tasks: 'config.yml'
 - name: 'Install'
   ansible.builtin.include_tasks: 'install.yml'
 
 - name: 'API'
-  when: _pihole_srv_api_config_enable.raw
+  when: pihole_flg_api
   ansible.builtin.include_tasks: 'api/main.yml'
 
-- name: 'Update'
-  ansible.builtin.include_tasks: 'update.yml'
-- name: 'Validate'
-  ansible.builtin.include_tasks: 'validate.yml'
+- name: 'Update | gravity'
+  when: pihole_flg_gravity_update
+  ansible.builtin.shell: 'pihole -g'
+  args:
+    executable: '/bin/bash'
+  changed_when: false
+
+- name: 'Update | post-backup'
+  when: pihole_flg_api and pihole_flg_post_backup
+  ansible.builtin.include_tasks: 'api/backup.yml'
+  vars:
+    label: 'post'
+
+- name: 'Start'
+  ansible.builtin.include_tasks: 'start.yml'

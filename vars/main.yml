@@ -1,0 +1,124 @@
+---
+# yamllint disable rule:line-length
+###############################################################################
+# PiHole Role Options
+###############################################################################
+#
+# Updates:
+# * KEEP a separate change log as changes are made.
+# * Use bare-metal docs to validate package/process changes.
+# * Update defaults.
+# * Update tests for any changes.
+# * Standard validation testing (yamllint, ansible-lint, to-do, no-qa).
+#
+# Reference:
+# * https://github.com/pi-hole/pi-hole
+
+pihole___release: "{{ {} | r_pufky.data.v3(
+
+    _date='2026-04-08',
+    _debian='trixie',
+    _app='v6.4.1',
+  ) }}"
+
+###############################################################################
+# APT Packages
+###############################################################################
+# Packages required for generating PiHole secrets. High entropy packages are
+# installed for container cases. Since kernel 5.4, haveged has been implemented
+# into the kernel; it still produces another source of random data.
+#
+# Reference:
+# * https://github.com/jirka-h/haveged
+# * https://github.com/nhorman/rng-tools
+
+pihole___packages:
+  - 'ca-certificates'
+  - 'qrencode'  # TOTP QR codes.
+  - 'git'  # BALLOON-SHA256 password hashes.
+  - 'rng-tools5'  # High entropy random data.
+  - 'haveged'  # High entropy random data.
+
+###############################################################################
+# Balloon-hashing Options
+###############################################################################
+# Use python3 package to generate valid balloon-sha256 hashes.
+#
+# Keys are currently published without user ID's, which makes verification
+# impossible, and the repository has no released versions.
+#
+# PiHole uses custom BALLOON-SHA256 password hashing:
+# * 128bit salt.
+# * Version (v) 1.
+# * Space cost (s) 1024.
+# * Time cost (t) 32.
+#
+# Reference
+# * https://github.com/nachonavarro/balloon-hashing/issues/16
+# * https://en.wikipedia.org/wiki/Balloon_hashing
+# * https://github.com/pi-hole/FTL/blob/master/src/config/password.c
+
+pihole___balloon: "{{ {} | r_pufky.data.v3(
+
+    _url='https://github.com/nachonavarro/balloon-hashing',
+    _opt_d='/opt/balloon-hashing',
+    _py='/opt/balloon-hashing/balloon.py',
+    _space=1024,
+    _time=32,
+    _version=1,
+  ) }}"
+
+###############################################################################
+# PiHole
+###############################################################################
+# Releases are installed through script not github. Updates are managed via
+# pihole -up.
+#
+# Hidden unattended install option changes occasionally.
+#
+# Reference:
+# * https://github.com/pi-hole/pi-hole/releases
+# * https://github.com/pi-hole/pi-hole/blob/master/automated%20install/basic-install.sh#L1642
+
+pihole___app: "{{ {} | r_pufky.data.v3(
+
+    _basic_install='/tmp/basic-install.sh',
+    _url='https://install.pi-hole.net',
+    _opt_d='/opt/pihole',
+
+    _etc_d='/etc/pihole',
+    _cfg='/etc/pihole/pihole.toml',
+    _versions='/etc/pihole/versions',
+    _pihole_hash='/etc/pihole/pihole_hash.py',
+    _broken='/etc/pihole/pihole.toml.broken',
+    _conf_d='/etc/pihole/conf.d',
+
+    _unattended_flag=' --unattended',
+  ) }}"
+
+###############################################################################
+# Default PiHole User/Group
+###############################################################################
+# Create a more locked down pihole user than install script uses.
+#
+# Changes:
+# * UID: 123 (default: 997).
+# * GID: 123 (default: auto).
+# * home: /nonexistent (default: /home/pihole).
+
+pihole___group:
+  name: 'pihole'
+  gid: 123
+
+pihole___user:
+  name: 'pihole'
+  group: 'pihole'
+  uid: 123
+  shell: '/usr/sbin/nologin'
+  home: '/nonexistent'
+  create_home: false
+  password: '!'
+  password_lock: true
+  update_password: 'always'
+  expires: -1
+  system: true

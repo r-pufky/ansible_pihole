@@ -8,6 +8,8 @@
 # * https://docs.pi-hole.net/api/
 # * https://ftl.pi-hole.net/master/docs/#post-/groups
 
+- name: 'API | start'
+  ansible.builtin.include_tasks: 'start.yml'
 - name: 'API | auth'
   ansible.builtin.include_tasks: 'auth.yml'
 - name: 'API | groups'

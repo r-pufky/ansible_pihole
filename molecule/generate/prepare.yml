@@ -17,13 +17,6 @@
       vars:
         test_name: 'Prepare | cache'
 
-    - name: 'Prepare | cache | create /tmp/ansible_pihole_test'
-      ansible.builtin.file:
-        path: '/tmp/ansible_pihole_test'
-        mode: '0755'
-        state: 'directory'
-      delegate_to: 'localhost'
-
     - name:
         '{{ "Prepare | cache | " ~ pihole___app._basic_install | basename }}'
       ansible.builtin.include_role:
@@ -60,27 +53,32 @@
 
 - name: 'Prepare'
   hosts: 'all'
-  gather_facts: true  # ansible_facts['date_time'].
+  gather_facts: false
   tasks:
+    - name: 'Prepare | import role variables'
+      ansible.builtin.include_vars:
+        file: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~ "/vars/main.yml"
+          }}'
+
     - name: 'Prepare | inject | required testing packages'
       ansible.builtin.apt:
         name: 'rsync'
         state: 'present'
 
-    - name: 'Prepare | stage basic-install.sh'
+    - name:
+        '{{ "Prepare | inject | " ~ pihole___app._basic_install | basename }}'
       ansible.builtin.copy:
         src: '{{
-            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
-            "/molecule/cache/basic-install.sh"
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~ "/molecule/cache/" ~
+            pihole___app._basic_install | basename
           }}'
-        dest: '/tmp/basic-install.sh'
+        dest: '{{ pihole___app._basic_install }}'
         owner: 'root'
         group: 'root'
         mode: '0755'
-        directory_mode: '0755'
-        force: false
 
-    - name: 'Prepare | stage balloon'
+    - name: 'Prepare | inject | balloon source'
       ansible.posix.synchronize:
         src: '{{
             lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
@@ -91,11 +89,3 @@
         recursive: true
         archive: false
         checksum: true
-
-    - name: 'Prep | roles | r_pufky.srv.pihole (initial)'
-      ansible.builtin.include_role:
-        name: 'r_pufky.srv.pihole'
-      vars:
-        pihole_flg_pre_backup: false
-        pihole_flg_post_backup: false
-        pihole_flg_api: false

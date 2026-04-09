@@ -1,0 +1,37 @@
+---
+###############################################################################
+# Start
+###############################################################################
+# Confirm no broken configurations and PiHole is active and running.
+
+- name: '{{ "Start | filesystem | check " ~ pihole___app._broken }}'
+  ansible.builtin.stat:
+    path: '{{ pihole___app._broken }}'
+  register: pihole__test
+
+- name: 'Start | assert | ⚠ Broken Config ⚠'
+  when: pihole__test.stat.exists
+  ansible.builtin.fail:
+    msg: |
+
+      ✘ Broken configs found.
+
+      {{ pihole___app._broken }} should not exist.
+
+      There was an error rendering the configuration file which PiHole
+      had to re-write with defaults. This due to syntactically correct
+      but invalid settings. Compare the two files to resolve.
+
+- name: 'Start | fact | query services'
+  ansible.builtin.service_facts:
+
+- name: 'Start | assert | services running'
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts.services[item].state == 'running'
+    fail_msg: |
+
+      ✘ Service failed to start.
+      {{ item }}
+  loop:
+    - 'pihole-FTL.service'

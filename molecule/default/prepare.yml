@@ -4,33 +4,54 @@
   connection: local
   gather_facts: false
   tasks:
-    - name: 'Prepare | create cache'
+    - name: 'Prepare | import role variables'
+      ansible.builtin.include_vars:
+        file: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~ "/vars/main.yml"
+          }}'
+
+    - name: 'Prepare | cache'
       ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
+        name: 'r_pufky.data.test'
         tasks_from: 'create_cache.yml'
       vars:
-        test_name: 'Prepare cache'
+        test_name: 'Prepare | cache'
 
-    - name: 'Prepare | check basic-install.sh'
+    - name: 'Prepare | fact | generate conf.d cache location'
+      ansible.builtin.set_fact:
+        pihole__cache: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
+            "/molecule/cache/conf.d"
+          }}'
+
+    - name: '{{ "Prepare | filesystem | create " ~ pihole__cache }}'
+      ansible.builtin.file:
+        path: '{{ pihole__cache }}'
+        mode: '0755'
+        state: 'directory'
+
+    - name:
+        '{{ "Prepare | cache | " ~ pihole___app._basic_install | basename }}'
       ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
+        name: 'r_pufky.data.test'
         tasks_from: 'cache_url.yml'
       vars:
-        test_name: 'Prepare | cache basic-install.sh'
-        test_dest: 'basic-install.sh'
-        test_url: 'https://install.pi-hole.net'
+        test_name:
+          '{{ "Prepare | cache | " ~ pihole___app._basic_install | basename }}'
+        test_dest: '{{ pihole___app._basic_install | basename }}'
+        test_url: '{{ pihole___app._url }}'
         test_mode: '0640'
 
-    - name: 'Prepare | check balloon'
+    - name: 'Prepare | cache | balloon source'
       ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
+        name: 'r_pufky.data.test'
         tasks_from: 'cache_git.yml'
       vars:
-        test_name: 'Prepare | cache balloon'
+        test_name: 'Prepare | cache | balloon source'
         test_dest: 'balloon'
-        test_repo: 'https://github.com/nachonavarro/balloon-hashing'
+        test_repo: '{{ pihole___balloon._url }}'
 
-    - name: 'Prepare | cleanup balloon'
+    - name: 'Prepare | cache | cleanup balloon source'
       ansible.builtin.file:
         path: '{{
             lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~
@@ -43,11 +64,60 @@
         - '.github'
         - '.gitignore'
 
+    - name: 'Prepare | cmd | generate RSA private key'
+      ansible.builtin.command:
+        argv:
+          - 'openssl'
+          - 'genrsa'
+          - '-out'
+          - '{{ pihole__cache ~ "/pihole_test.key" }}'
+          - '2048'
+        creates: '{{ pihole__cache ~ "/pihole_test.key" }}'
+
+    - name: 'Prepare | cmd | generate certificate signing request CSR'
+      ansible.builtin.command:
+        argv:
+          - 'openssl'
+          - 'req'
+          - '-new'
+          - '-key'
+          - '{{ pihole__cache ~ "/pihole_test.key" }}'
+          - '-out'
+          - '{{ pihole__cache ~ "/pihole_test.csr" }}'
+          - '-subj'
+          - '/CN=127.0.01'
+        creates: '{{ pihole__cache ~ "/pihole_test.csr" }}'
+
+    - name: 'Prepare | cmd | create self-signed certificate'
+      ansible.builtin.command:
+        argv:
+          - 'openssl'
+          - 'x509'
+          - '-req'
+          - '-days'
+          - '3600'
+          - '-in'
+          - '{{ pihole__cache ~ "/pihole_test.csr" }}'
+          - '-signkey'
+          - '{{ pihole__cache ~ "/pihole_test.key" }}'
+          - '-out'
+          - '{{ pihole__cache ~ "/pihole_test.crt" }}'
+        creates: '{{ pihole__cache ~ "/pihole_test.crt" }}'
+
+    - name: 'Prepare | cmd | generate pihole_test.pem'
+      ansible.builtin.shell: >
+        cat
+        {{ pihole__cache ~ "/pihole_test.crt " }}
+        {{ pihole__cache ~ "/pihole_test.key > " }}
+        {{ pihole__cache ~ "/pihole_test.pem" }}
+      args:
+        creates: '{{ pihole__cache ~ "/pihole_test.pem" }}'
+
 - name: 'Prepare'
   hosts: 'all'
   gather_facts: false
   tasks:
-    - name: 'Prepare | install rsync'
+    - name: 'Prepare | inject | required testing packages'
       ansible.builtin.apt:
         name: 'rsync'
         state: 'present'

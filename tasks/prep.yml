@@ -1,106 +1,177 @@
 ---
 ###############################################################################
-# Prep
+#  Pre Execution Tasks
 ###############################################################################
-# Create custom PiHole user and initial etc directory. Check for existing TOML
-# file for version information before writing settings for installer. QR codes
-# require package installation.
+# Only use data annotations in role after merging role, defaults, runtime data.
+# Service may not exist if first install.
 #
-# Generates:
-#   _pihole: dict - Role runtime specific config.
+# Static pihole.toml configuration is required before installation or dialog
+# prompts will appear (even in --unattended) to set required defaults.
+#
+# To prevent interactive prompts during unattended installation, reverse the
+# standard install pattern and statically configure before installing PiHole.
+# This will prevent interaction and pre-setup the environment for further API
+# configuration. Supporting utilities must be staged before installation.
+#
+# Backup running configuration if enabled before applying changes.
 
-- name: 'Install | packages'
+- name: 'Prep | fact | record start time'
+  ansible.builtin.set_fact:
+    pihole__srv: "{{ pihole___release | r_pufky.data.v3(
+
+        _start=now(utc=True, fmt='%Y-%m-%dT%H%M%S'),
+        _user=pihole___user.name,
+        _group=pihole___user.group,
+
+        _cfg=pihole_srv_cfg,
+        _conf_d=pihole_srv_conf_d,
+
+        _restrict=pihole_srv_restrict,
+        _restart=pihole_srv_restart,
+      ) }}"
+    pihole__cfg: "{{ pihole___app | r_pufky.data.v3(
+
+        _api=pihole_cfg_api,
+        _api_validate=pihole_cfg_api_validate,
+
+        _api_auth=pihole_cfg_api ~ '/auth',
+        _api_groups=pihole_cfg_api ~ '/groups',
+        _api_clients=pihole_cfg_api ~ '/clients',
+        _api_domains=pihole_cfg_api ~ '/domains',
+        _api_lists=pihole_cfg_api ~ '/lists',
+        _api_teleporter=pihole_cfg_api ~ '/teleporter',
+
+        _backup=pihole_cfg_backup | regex_replace('\\/$', '') ~ '/',
+        _pwhash=pihole_cfg_pwhash,
+        _app_pwhash=pihole_cfg_app_pwhash,
+
+        _mgmt_groups=pihole_cfg_mgmt_groups,
+        _mgmt_clients=pihole_cfg_mgmt_clients,
+        _mgmt_domains=pihole_cfg_mgmt_domains,
+        _mgmt_lists=pihole_cfg_mgmt_lists,
+      ) }}"
+
+- name: 'Prep | account | service user'
+  when: pihole__srv._restrict
+  block:
+    - name: '{{ "Prep | account | query user " ~ pihole__srv._user }}'
+      ansible.builtin.command: '{{ "id " ~ pihole__srv._user }}'
+      failed_when: false
+      register: pihole__cfg_check
+      changed_when: pihole__cfg_check.rc > 0
+
+    - name: '{{ "Prep | account | query group " ~ pihole__srv._group }}'
+      ansible.builtin.command: '{{ "groups " ~ pihole__srv._group }}'
+      failed_when: false
+      register: pihole__group_check
+      changed_when: pihole__group_check.rc > 0
+
+    - name: '{{ "Prep | account | create group " ~ pihole__srv._group }}'
+      when: pihole__group_check.rc != 0
+      ansible.builtin.group:
+        gid: '{{ pihole___group.gid }}'
+        name: '{{ pihole__srv._group }}'
+        state: 'present'
+
+    - name: '{{ "Prep | account | create user " ~ pihole__srv._user }}'
+      when: pihole__cfg_check.rc != 0
+      ansible.builtin.user:
+        name: '{{ pihole___user.name }}'
+        group: '{{ pihole___user.group }}'
+        uid: '{{ pihole___user.uid }}'
+        shell: '{{ pihole___user.shell }}'
+        home: '{{ pihole___user.home }}'
+        create_home: '{{ pihole___user.create_home }}'
+        password: '{{ pihole___user.password }}'
+        password_lock: '{{ pihole___user.password_lock }}'
+        update_password: '{{ pihole___user.update_password }}'
+        expires: '{{ pihole___user.expires }}'
+        system: '{{ pihole___user.system }}'
+
+    # Pre-existing users may have a different UID/GID/Home.
+    - name: '{{ "Prep | account | enumerate " ~ pihole__srv._user }}'
+      ansible.builtin.user:
+        name: '{{ pihole__srv._user }}'
+      check_mode: true
+      changed_when: false
+      register: pihole__cfg_query
+
+    - name: 'Prep | fact | parse service UID/GID'
+      ansible.builtin.set_fact:
+        pihole__srv: "{{ pihole__srv | r_pufky.data.v3(
+
+            _uid=pihole__cfg_query.uid,
+            _gid=pihole__cfg_query.group,
+          ) }}"
+
+- name: '{{ "Prep | filesystem | query " ~ pihole___app._versions }}'
+  ansible.builtin.stat:
+    path: '{{ pihole___app._versions }}'
+  register: pihole__versions
+
+# Render configuration locally and resolve TOTP, pwhash settings. There is no
+# from_toml in ansible-core or community.general. Instead use controller node
+# to parse to JSON and convert to dict.
+- name: 'Prep | cmd | resolve pihole.toml'
+  ansible.builtin.shell: |
+    python3 -c "
+    import tomllib, json, os;
+    print(json.dumps(tomllib.loads(os.environ['TOML'])))
+    "
+  environment:
+    TOML: "{{
+
+        lookup(
+          'ansible.builtin.template',
+          pihole__srv._cfg
+          if pihole__srv._cfg | length > 0 else
+          'templates/default/pihole.toml'
+        )
+      }}"
+  register: pihole__json
+  delegate_to: localhost
+  changed_when: false
+
+- name: 'Prep | fact | parse toml'
+  ansible.builtin.set_fact:
+    pihole__srv: "{{ pihole__srv | r_pufky.data.v3(
+
+        _tmpl_cfg=pihole__json.stdout | from_json,
+        _installed=pihole__versions.stat.exists,
+      ) }}"
+
+- name: 'Prep | fact | parse secrets'
+  ansible.builtin.set_fact:
+    pihole__srv: "{{ pihole__srv | r_pufky.data.v3(
+
+        _totp=pihole__srv._tmpl_cfg.webserver.api.totp_secret | default(''),
+        _pwhash=pihole__srv._tmpl_cfg.webserver.api.pwhash | default(''),
+        _app_pwhash=(
+          pihole__srv._tmpl_cfg.webserver.api.app_pwhash| default('')
+        ),
+      ) }}"
+
+- name: 'Prep | pre-requisite packages'
   ansible.builtin.include_role:
     name: 'r_pufky.deb.apt'
   vars:
     apt_packages:
-      - '{{ pihole_role_packages }}'
-    apt_package_update_cache: true
-
-- name: 'Prep | manage users'
-  when: _pihole_srv_create_user.raw
-  ansible.builtin.include_role:
-    name: 'r_pufky.deb.users'
-    tasks_from: 'role_account_add.yml'
-  vars:
-    users_role_user: '{{ pihole_role_user }}'
-    users_role_group: '{{ pihole_role_group }}'
-
-- name: 'Prep | enumerate system user {{ _pihole_srv_user.raw }}'
-  ansible.builtin.user:
-    name: '{{ _pihole_srv_user.raw }}'
-  check_mode: true
-  changed_when: false
-  register: _pihole_srv_user_query
-
-- name: 'Prep | parse system user UID/GID'
-  ansible.builtin.set_fact:
-    _pihole_uid: '{{ _pihole_srv_user_query.uid }}'
-    _pihole_gid: '{{ _pihole_srv_user_query.group }}'
-
-- name: 'Prep | parse system user UID/GID'
-  ansible.builtin.set_fact:
-    _pihole_srv_user: '{{
-        _pihole_srv_user |
-        combine({"_uid": _pihole_srv_user_query.uid})
-      }}'
-    _pihole_srv_group: '{{
-        _pihole_srv_group |
-        combine({"_gid": _pihole_srv_user_query.group})
-      }}'
-
-- name: 'Prep | create {{ pihole_role_etc_dir }}'
-  ansible.builtin.file:
-    path: '{{ pihole_role_etc_dir }}'
-    owner: '{{ _pihole_srv_user.raw }}'
-    group: '{{ _pihole_srv_group.raw }}'
-    mode: '0755'
-    state: 'directory'
-
-- name: 'Prep | create {{ pihole_role_balloon_root }}'
-  ansible.builtin.file:
-    path: '{{ pihole_role_balloon_root }}'
-    owner: 'root'
-    group: 'root'
-    mode: '0755'
-    state: 'directory'
-
-- name: 'Prep | query version'
-  ansible.builtin.command:
-    argv:
-      - 'grep'
-      - '# Pi-hole configuration file ('
-      - '{{ pihole_role_toml_file }}'
-  changed_when: false
-  failed_when: false  # 0,1: file exists; 2: file not found.
-  register: _pihole_toml
-
-- name: 'Prep | query installer cache'
-  ansible.builtin.stat:
-    path: '/tmp/basic-install.sh'
-  register: _pihole_cache
-
-- name: 'Prep | parse version'
-  ansible.builtin.set_fact:
-    _pihole:
-      installed: '{{ true if _pihole_toml.rc in [0, 1] else false }}'
-      version: "{{ _pihole_toml.stdout | regex_search('\\(v(.+)\\)', '\\1') }}"
-      install_cache: '{{ _pihole_cache.stat.exists }}'
+      - '{{ pihole___packages }}'
+    apt_srv_package_update_cache: true
 
 - name: 'Prep | pre-backup'
-  when: >
-    _pihole_srv_api_config_enable.raw and
-    _pihole_srv_backup_pre_enable.raw and
-    _pihole.installed
+  when: pihole_flg_api and pihole_flg_pre_backup and pihole__srv._installed
   ansible.builtin.include_tasks: 'api/backup.yml'
   vars:
     label: 'pre'
 
-- name: 'Prep | stop services'
-  when: _srv_service_restart_enable.raw
-  ansible.builtin.systemd:
-    name: '{{ item }}'
-    state: 'stopped'
-  failed_when: false
+- name: 'Prep | filesystem | set system directories'
+  ansible.builtin.file:
+    path: '{{ item }}'
+    owner: '{{ pihole__srv._user }}'
+    group: '{{ pihole__srv._group }}'
+    mode: '0755'
+    state: 'directory'
   loop:
-    - 'pihole-FTL.service'
+    - '{{ pihole___app._etc_d }}'
+    - '{{ pihole___app._conf_d }}'
