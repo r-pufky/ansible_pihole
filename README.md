@@ -169,7 +169,7 @@ churn due to inconsistent and rapid rolling release cycle.
   6.x.x   | 13     | 2.20    | v6.4.1  | Ansible 2.20, feature flags, and semantic versioning.
   5.x.x   | 13     | 2.18    | v6.3.2  | Update to PiHole 6.3.2.
   4.x.x   | 13     | 2.18    | v6.1.4  | Migrate to Debian Trixie.
-  3.x.x   | 12     | 2.18    | v11.0.3 | FTL-DNS configuration support.
+  3.x.x   | 12     | 2.18    | v5.17.1 | FTL-DNS configuration support.
   2.x.x   | 12     | 2.12    | v5.17   | Redhat (experimental), conditional forwarding support.
   1.x.x   | 12     | 2.12    | v5.8.1  | Migrate from private repository.
 
