@@ -7,7 +7,7 @@
 - name: 'API | auth | 2FA token'
   when: pihole__cfg._app_pwhash | length == 0
   block:
-    - name: 'API | auth | ⚠ 2FA Token Required ⚠'
+    - name: 'API | auth | 🛆 2FA Token Required 🛆'
       ansible.builtin.debug:
         msg: |
 
@@ -39,7 +39,7 @@
             _csrf=pihole__api.json.session.csrf,
           ) }}"
   rescue:
-    - name: 'API | auth | ⚠ FAILED ⚠'
+    - name: 'API ⛑ | auth | 🛆 FAILED 🛆'
       ansible.builtin.fail:
         msg: |
 
@@ -69,7 +69,7 @@
             _csrf=pihole__api.json.session.csrf,
           ) }}"
   rescue:
-    - name: 'API | auth | ⚠ FAILED ⚠'
+    - name: 'API ⛑ | auth | 🛆 FAILED 🛆'
       ansible.builtin.fail:
         msg: |
 

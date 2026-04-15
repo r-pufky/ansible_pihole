@@ -9,7 +9,7 @@
     path: '{{ pihole___app._broken }}'
   register: pihole__test
 
-- name: 'Start | assert | ⚠ Broken Config ⚠'
+- name: 'Start | assert | 🛆 Broken Config 🛆'
   when: pihole__test.stat.exists
   ansible.builtin.fail:
     msg: |

@@ -68,6 +68,21 @@
           map('regex_replace', '^', pihole___app._conf_d ~ "/") | list
         )
 
+- name: '{{ "Config | filesystem | query " ~ pihole___app._conf_d }}'
+  when: pihole__srv._conf_d | length == 0
+  ansible.builtin.find:
+    paths: "{{ pihole___app._conf_d }}"
+    recurse: false  # Don't need to enumerate sub-directories to remove.
+    hidden: true
+  register: pihole__cmd
+
+- name: '{{ "Config | filesystem | clear " ~ pihole___app._conf_d }}'
+  when: pihole__srv._conf_d | length == 0
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ pihole__cmd.files }}"
+
 - name: '{{ "Config | filesystem | set " ~ pihole___app._cfg }}'
   ansible.builtin.template:
     src: '{{

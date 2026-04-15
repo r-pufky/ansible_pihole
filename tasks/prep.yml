@@ -29,7 +29,7 @@
         _restrict=pihole_srv_restrict,
         _restart=pihole_srv_restart,
       ) }}"
-    pihole__cfg: "{{ pihole___app | r_pufky.data.v3(
+    pihole__cfg: "{{ {} | r_pufky.data.v3(
 
         _api=pihole_cfg_api,
         _api_validate=pihole_cfg_api_validate,
@@ -147,7 +147,7 @@
         _totp=pihole__srv._tmpl_cfg.webserver.api.totp_secret | default(''),
         _pwhash=pihole__srv._tmpl_cfg.webserver.api.pwhash | default(''),
         _app_pwhash=(
-          pihole__srv._tmpl_cfg.webserver.api.app_pwhash| default('')
+          pihole__srv._tmpl_cfg.webserver.api.app_pwhash | default('')
         ),
       ) }}"
 

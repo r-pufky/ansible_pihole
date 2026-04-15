@@ -37,7 +37,7 @@
     validate_certs: '{{ pihole__cfg._api_validate }}'
   register: pihole__api
 
-- name: 'API | backup | ⚠ FAILED ⚠'
+- name: 'API | backup | 🛆 FAILED 🛆'
   when: pihole__api.status == 401
   ansible.builtin.fail:
     msg: |

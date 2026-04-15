@@ -145,7 +145,6 @@ changes to be applied without DNS service interruption.
     pihole_cfg_app_pwhash: 'test2'  # Required for REST API use.
 ```
 
-
 ## Development
 Configure [environment][a].
 
@@ -184,7 +183,6 @@ Associate pull requests with a submitted bug.
 ## Author Information
 PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
 
-
 [a]: https://r-pufky.github.io/ansible_docs
 [b]: https://semver.org/spec/v2.0.0
 [c]: https://www.tldrlegal.com/license/gnu-affero-general-public-license-v3-agpl-3-0
@@ -198,4 +196,4 @@ PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
 [j]: https://github.com/r-pufky/ansible_pihole/tree/main/defaults/main/main.yml
 [k]: https://github.com/r-pufky/ansible_pihole/blob/main/defaults/main/ports.yml
 [l]: https://github.com/r-pufky/ansible_pihole/blob/main/templates/default/pihole.toml
-[m]: https://r-pufky.github.io/docs/service/pihole
+[m]: https://r-pufky.github.io/docs/network/pihole

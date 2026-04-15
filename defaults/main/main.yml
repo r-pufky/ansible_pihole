@@ -65,8 +65,9 @@ pihole_srv_restrict: true
 # PiHole pihole.toml to set.
 #
 # Ansible controller path to source pihole.toml (treated as a jinja2 template
-# allowing for ansible variable interpretation). Overwrites existing
-# /etc/pihole/pihole.toml. PiHole will rewrite this file on startup with
+# allowing for ansible variable use).
+#
+# Sets /etc/pihole/pihole.toml. PiHole will rewrite this file on startup with
 # comments, resulting in an 'always changed' status if the provided file does
 # not strictly follow the re-write format.
 #
@@ -80,11 +81,19 @@ pihole_srv_cfg: ''
 
 # PiHole conf.d directory to set.
 #
-# Ansible controller path to source conf.d files (treated as a jinja2 templates
-# allowing for ansible variable interpretation). Overwrites existing config
-# data in /etc/pihole/conf.d/*. Custom certificates, etc. should be included
+# Ansible controller path to source directory (treated as a jinja2 templates
+# allowing for ansible variable use).
+#
+# Sets /etc/pihole/conf.d/*. Custom certificates, etc. should be included
 # here and sourced in pihole.toml as needed. PiHole manages file permissions.
 # Files not sourced will be removed.
+#
+# postgres_flg_config=true:
+# ⋮pihole_srv_conf_d='' - Remove existing files.
+# ⋮pihole_srv_conf_d='{DIR}' - Replace existing files with sourced template
+# ⋮    dir.
+# postgres_flg_config=false:
+# ⋮pihole_srv_conf_d=* - Take no action.
 #
 # pihole_srv_conf_d: 'host_vars/pihole.example.com/conf.d'
 #
