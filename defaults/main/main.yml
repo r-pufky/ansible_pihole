@@ -43,7 +43,7 @@ pihole_flg_api: false
 # * https://docs.pi-hole.net/main/update
 pihole_flg_gravity_update: true
 
-# 5. Run backup after applying role changes? Default: False.
+# 6. Run backup after applying role changes? Default: False.
 pihole_flg_post_backup: false
 
 ###############################################################################

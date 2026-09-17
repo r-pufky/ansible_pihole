@@ -48,3 +48,22 @@
   retries: 3
   register: pihole__service
   until: pihole__service.status.ActiveState == 'active'
+
+# 6.4.1+ seems to require a force restart to pickup any initial changes as the
+# initial launch code path and startup with config code path are different.
+# This potentially results in API 400's (readonly database) as a sub-process of
+# pihole is not running under the correct pihole user. Force restarting
+# resolves this issue.
+#
+# Reference:
+# * https://github.com/pi-hole/FTL/issues/3107
+- name: 'Restart | systemd | pihole-FTL (3107 bug fix)'
+  ansible.builtin.systemd:
+    name: 'pihole-FTL.service'
+    state: 'restarted'
+    enabled: true
+    daemon_reload: true
+  delay: 15
+  retries: 3
+  register: pihole__service
+  until: pihole__service.status.ActiveState == 'active'
