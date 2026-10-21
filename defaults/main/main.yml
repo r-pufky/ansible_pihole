@@ -11,7 +11,11 @@
 # Default: False.
 pihole_flg_generate: false
 
-# 2. Run backup before applying role changes? Default: False.
+# 2. Run backup before applying role changes?
+#
+# Requires app_sudo = true in sourced pihole.toml.
+#
+# Default: False.
 pihole_flg_pre_backup: false
 
 # 3. Apply PiHole updates?
@@ -43,7 +47,11 @@ pihole_flg_api: false
 # * https://docs.pi-hole.net/main/update
 pihole_flg_gravity_update: true
 
-# 6. Run backup after applying role changes? Default: False.
+# 6. Run backup after applying role changes?#
+#
+# Requires app_sudo = true in sourced pihole.toml.
+#
+# Default: False.
 pihole_flg_post_backup: false
 
 ###############################################################################

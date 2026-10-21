@@ -1184,7 +1184,7 @@
     #
     # Allowed values are:
     #     true or false
-    app_sudo = false
+    app_sudo = true
 
     # Should FTL create a temporary CLI password?
     #

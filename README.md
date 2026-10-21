@@ -165,6 +165,7 @@ churn due to inconsistent and rapid rolling release cycle.
 
   Release | Debian | Ansible | PiHole  | Notes
  ---------|--------|---------|---------|-------
+  7.x.x   | 13     | 2.20    | v6.5    | Critical PiHole vulnerabilities update.
   6.x.x   | 13     | 2.20    | v6.4.1  | Ansible 2.20, feature flags, and semantic versioning.
   5.x.x   | 13     | 2.18    | v6.3.2  | Update to PiHole 6.3.2.
   4.x.x   | 13     | 2.18    | v6.1.4  | Migrate to Debian Trixie.
